@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <process.h>
-#include <dir.h>
+#include <io.h>
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
@@ -12,6 +12,9 @@
 #include <conio.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <stdbool.h>
+
+#define PROGRAM_DIRECTORY "C:/Users/Win 10/Desktop/root/hadis80/"
 struct user
 {
 	char name[100];
@@ -21,45 +24,90 @@ struct user
 	int access;
 	int mistakes;
 	char time[10];
-} s[1000], x, presentuser;
-void hello();
-int pwd();
-int list();
-int enter();
-void makedir(char dirname[]);
-int strength_pass(char pass[]);
-void creatfile(char name[]);
-void wc(char name[]);
-void cat(char name[]);
-void createuser(char name[]);
-void diff(char name1[], char name2[]);
-void printdir(struct user presentuser);
-void copy(char name[], char name2[]);
-void move(char name[], char name2[]);
-void operand(char name1[], char name2[]);
-void operand2(char name1[], char name2[]);
-void increse(char username[]);
-void su(char username[]);
-void intro();
-void intromkdir();
-void help();
-void update();
-void showtime();
-void showtime2();
-void level();
-void pass(char p[]);
+} users[1000], x, current_user;
+
+void diff_files_command(char[], char[]);
+void copy_file_command(char[], char[]);
+void move_file_command(char[], char[]);
+void make_directory(char[]);
+
+int get_password_strength(char[]);
+void create_new_user_file(char[]);
+
+void word_count_command(char[]);
+void cat_file_command(char[]);
+void create_new_user_command(char[]);
+void show_file_command(char[]);
+void hide_file_command(char[]);
+void exif_file_command(char[]);
+void show_time_command();
+void create_directory_command();
+void show_accurate_time_command();
+void help_command();
+void execute_exit_command();
+void execute_ls_command();
+void execute_su_command();
+
+void redirection_greater_operand(char[], char[]);
+void redirection_greater_equal_operand(char[], char[]);
+
+void print_user_directory_details(struct user);
+void print_welcome_messages();
+int print_working_directory();
+
+void increse_user_access_level(char[]);
+void switch_user_command(char[]);
+void redirection_command_help();
+void mkdir_command_help();
+bool is_password_valid(char[], char[]);
+bool is_username_valid(char[], char[]);
+bool is_strings_equal(char[], const char[]);
+
+void update_usersinfo_file();
+void read_usersinfo_file();
+void write_usersinfo_file();
+
+void print_level_of_access();
+void pass(char[]);
 void pass2();
-void printFileProperties(struct stat stats);
-void exif(char name[]);
-void show(char name[]);
-void hide(char name[]);
-void search(char name[]);
-void search2(char name[]);
+void print_file_properties(struct stat);
+
+void search_file(char[]);
+void search_directory(char[]);
+void handle_user_enter();
+void handle_user_commands();
+int get_user_commands();
+void enter_user_successfully(char[]);
+void print_normal_user_directory_info(struct user, char[]);
+void print_admin_user_directory_info(struct user, char[]);
+
+/*
+//*The different color codes are
+
+//*0   BLACK
+//*1   BLUE
+//*2   GREEN
+//*3   CYAN
+//*4   RED
+//*5   MAGENTA
+//*6   BROWN
+//*7   LIGHTGRAY
+//*8   DARKGRAY
+//*9   LIGHTBLUE
+//*10  LIGHTGREEN
+//*11  LIGHTCYAN
+//*12  LIGHTRED
+//*13  LIGHTMAGENTA
+//*14  YELLOW
+//*15  WHITE
+*/
+
 void setcolor(int colorcode)
 {
 	HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(console, colorcode % 255);
 }
+
 void Cyan()
 {
 	printf("\033[0;36m");
@@ -73,31 +121,46 @@ void boldred()
 	printf("\033[1;31m");
 }
 
-int z, levelofaccess = 1, numberofusers = 0, currentuser = 0;
-int main() // main
+int level_of_access = 1, number_of_users = 0;
+
+int main()
+{
+
+	print_welcome_messages();
+	handle_user_enter();
+	handle_user_commands();
+
+	return 0;
+}
+
+void handle_user_enter()
 {
 	char username[100];
 	char password[100];
-	hello();
+
+	system("cls");
 	Boldcyan();
 	printf("\n\n\n\t\t\tPLEASE ENTER YOUR USERNAME: ");
 	gets(username);
-	Boldcyan(); // please enter your password:
+
+	Boldcyan();
 	printf("\n\n\n\t\t\tPLEASE ENTER YOUR PASSWORD: ");
 	gets(password);
+
 	FILE *fptr = fopen("usersinfo.txt", "rb");
-	struct user x;
-	fread(&x, sizeof(struct user), 1, fptr);
-	s[numberofusers] = x;
-	presentuser = x;
-	if (strcmp(password, x.passwd) == 0 && strcmp(username, x.username) == 0)
+
+	struct user selected_user;
+	fread(&selected_user, sizeof(struct user), 1, fptr);
+
+	users[number_of_users] = selected_user;
+	current_user = selected_user;
+
+	if (is_password_valid(password, selected_user.passwd) && is_username_valid(username, selected_user.username))
 	{
 
-		Cyan();
-		printf("\n\n\n\n\t\t\t\t\tWELCOME USER %s", username);
-		getchar();
+		enter_user_successfully(username);
 	}
-	else // permission denied..
+	else
 	{
 		boldred();
 		printf("PERMISSION DENIED:(\n");
@@ -105,272 +168,451 @@ int main() // main
 		{ // try again to enter
 			boldred();
 			printf("\n\nTRY AGAIN TO ENTER:)\n");
+
 			Boldcyan();
 			printf("\n\n\n\t\t\tPLEASE ENTER YOUR USERNAME: ");
 			gets(username);
+
 			Boldcyan();
 			printf("\n\n\n\t\t\tPLEASE ENTER YOUR PASSWORD: ");
 			gets(password);
 
-		} while (strcmp(password, x.passwd) != 0 || strcmp(username, x.username) != 0);
-
-		Cyan();
-		printf("\n\n\n\n\t\t\t\t\t\\WELCOME USER %s", x.username);
-		getchar();
+		} while (!is_password_valid(password, selected_user.passwd) || !is_username_valid(username, selected_user.username));
+		enter_user_successfully(username);
 	}
+}
+
+void enter_user_successfully(char username[])
+{
 	system("cls");
-	char s[1000];
+	Cyan();
+	printf("\n\n\n\n\t\t\t\t\t\\WELCOME USER %s", username);
+	getchar();
+}
+
+bool is_password_valid(char entered_password[], char valid_password[])
+{
+	return strcmp(entered_password, valid_password) == 0;
+}
+
+bool is_username_valid(char entered_username[], char valid_username[])
+{
+	return strcmp(entered_username, valid_username) == 0;
+}
+
+void handle_user_commands()
+{
+
 	while (1)
 	{
-		printdir(presentuser);
-		scanf("%s", s);
-		if (strcmp(s, "ls") == 0)
-		{
-			setcolor(11);
-			system("dir /b");
-			printf("\n");
-		}
-		else if (strcmp(s, "mkdir") == 0)
-		{
-			char name[100];
+		print_user_directory_details(current_user);
 
-			getchar();
-			gets(name);
-
-			CreateDirectory(name, NULL);
-			setcolor(12);
-			printf("Directory created");
-			printf("\n");
-		}
-		else if (strcmp(s, "EXIT") == 0)
+		if (get_user_commands() == -1)
 		{
-			getchar();
-			system("cls");
-			boldred();
-			printf("END OF PROGRAM..\nGOOD BYE:)");
 			break;
 		}
-		else if (strcmp(s, "pwd") == 0)
-		{
-			setcolor(12);
-			pwd();
-			printf("\n");
-		}
-		else if (strcmp(s, "chgr") == 0)
-		{
-			char name[100];
-			scanf("%s", name);
-			increse(name);
-		}
-		else if (strcmp(s, "create") == 0)
-		{
-			char *name;
-			name = (char *)malloc(sizeof(char));
-			scanf("%s", name);
-			if (levelofaccess == 1)
-			{
-				createuser(name);
-				printf("\n");
-			}
-			else
-			{
-				boldred();
-				printf("permission denied\n");
-			}
-		}
-		else if (strcmp(s, "su") == 0)
-		{
-			char name[100];
-			scanf("%s", name);
-			getchar();
-			su(name);
-		}
-		else if (strcmp(s, "diff") == 0)
-		{
-			char name3[100];
-			char name4[100];
-			scanf("%s%s", name3, name4);
-			//	diff(name3,name4);
+	}
+}
 
-			char temp[100] = "fc ";
-			strcat(temp, name3);
-			strcat(temp, " ");
-			strcat(temp, name4);
-			system(temp);
+int get_user_commands()
+{
+	char user_command[1000];
 
-			printf("\n");
-		}
-		else if (strcmp(s, "cd") == 0)
-		{
-			char name[1000]; // name=address
-			getchar();
-			gets(name);
-			chdir(name);
-			printf("\n");
-		}
-		else if (strcmp(s, "cat") == 0)
-		{
-			char name[1000];
-			scanf("%s", name);
-			cat(name);
-			printf("\n");
-		}
-		else if (strcmp(s, "wc") == 0)
-		{
-			char name[1000];
-			scanf("%s", name);
-			wc(name);
-			printf("\n");
-		}
-		else if (strcmp(s, "rm") == 0)
-		{
-			char name[100];
-			scanf("%s", name);
-			if (remove(name) == 0)
-			{
-				setcolor(12);
-				printf("deleted successfully\n");
-			}
-			else
-			{
-				boldred();
-				printf("file cannot be deleted or doesnt exist\n");
-			}
-		}
-		else if (strcmp(s, "rm-r") == 0)
-		{
-			char name[100];
-			scanf("%s", name);
-			if (rmdir(name) == 0)
-			{
-				setcolor(12);
-				printf("deleted successfully\n");
-			}
-			else
-			{
-				boldred();
-				printf("directory cannot be deleted or doesnt exist\n");
-			}
-		}
-		else if (strcmp(s, "cp") == 0)
-		{
-			char name1[100];
-			char name2[100];
-			scanf("%s%s", name1, name2);
-			copy(name1, name2);
-			printf("\n");
-		}
-		else if (strcmp(s, "mv") == 0)
-		{
-			char name1[100];
-			char name2[100];
-			scanf("%s%s", name1, name2);
-			move(name1, name2);
-			printf("\n");
-		}
-		/*
-		else if(strcmp(s,"myeditor")==0)
-		{
-			myeditor();
-		}
-		*/
-		else if (strcmp(s, "help") == 0)
-			help();
-
-		else if (strcmp(s, "time") == 0)
-			showtime();
-		else if (strcmp(s, "time-a") == 0)
-			showtime2();
-		else if (strcmp(s, "level") == 0)
-			level();
-		else if (strcmp(s, "passwd") == 0)
-		{
-			char p[100];
-			getchar();
-			setcolor(9);
-			printf("please enter your current password: ");
-			gets(p);
-			pass(p);
-		}
-		else if (strcmp(s, "passwd-l") == 0)
-		{
-			getchar();
-			if (levelofaccess == 1)
-				pass2();
-			else
-			{
-				boldred();
-				printf("permission denied:(\n");
-			}
-		}
-		else if (strcmp(s, "hide") == 0)
-		{
-			getchar();
-			char name[100];
-			gets(name);
-			hide(name);
-		}
-		else if (strcmp(s, "hide-r") == 0)
-		{
-			getchar();
-			char name[100];
-			gets(name);
-			show(name);
-		}
-		else if (strcmp(s, "exif") == 0)
-		{
-			getchar();
-			char name[100];
-			gets(name);
-			exif(name);
-			printf("\n");
-		}
-		else if (strcmp(s, "search") == 0)
-		{
-			getchar();
-			char name[100];
-			gets(name);
-			FILE *fptr = fopen(name, "rb");
-			if (fptr == NULL)
-			{
-				search2(name);
-				fclose(fptr);
-			}
-			else
-				search(name);
-		}
-
-		else
-		{
-			char s2[3];
-			scanf("%s", s2);
-			if (strcmp(s2, ">>") == 0)
-			{
-				char name[100];
-				scanf("%s", name);
-				operand2(s, name);
-			}
-			else if (strcmp(s2, ">") == 0)
-			{
-				char name[100];
-				scanf("%s", name);
-				operand(s, name);
-			}
-			else
-			{
-				boldred();
-				printf("incorrect command\n");
-				presentuser.mistakes++;
-				update();
-			}
-		}
+	scanf("%s", user_command);
+	if (is_strings_equal(user_command, "ls"))
+	{
+		execute_ls_command();
 	}
 
-	return 0;
+	else if (is_strings_equal(user_command, "mkdir"))
+	{
+		create_directory_command();
+	}
+
+	else if (is_strings_equal(user_command, "EXIT"))
+	{
+		exit_command();
+		return -1;
+	}
+
+	else if (is_strings_equal(user_command, "pwd"))
+	{
+
+		print_working_directory();
+	}
+
+	else if (is_strings_equal(user_command, "chgr"))
+	{
+		execute_chgr_command();
+	}
+
+	else if (is_strings_equal(user_command, "create"))
+	{
+
+		execute_create_command();
+	}
+
+	else if (is_strings_equal(user_command, "su"))
+	{
+		execute_su_command();
+	}
+
+	else if (is_strings_equal(user_command, "diff"))
+	{
+		execute_diff_command();
+	}
+
+	else if (is_strings_equal(user_command, "cd"))
+	{
+		execute_cd_command();
+	}
+
+	else if (is_strings_equal(user_command, "cat"))
+	{
+		execute_cat_command();
+	}
+
+	else if (is_strings_equal(user_command, "wc"))
+	{
+		execute_wc_command();
+	}
+
+	else if (is_strings_equal(user_command, "rm"))
+	{
+		execute_rm_command();
+	}
+
+	else if (is_strings_equal(user_command, "rm-r"))
+	{
+		execute_rm_dash_r_command();
+	}
+
+	else if (is_strings_equal(user_command, "cp"))
+	{
+		execute_cp_command();
+	}
+
+	else if (is_strings_equal(user_command, "mv"))
+	{
+		execute_mv_command();
+	}
+	/*
+	else if(strcmp(s,"myeditor")==0)
+	{
+		myeditor();
+	}
+	*/
+	else if (is_strings_equal(user_command, "help"))
+	{
+		help_command();
+	}
+
+	else if (is_strings_equal(user_command, "time"))
+	{
+		show_time_command();
+	}
+
+	else if (is_strings_equal(user_command, "time-a"))
+	{
+		show_accurate_time_command();
+	}
+
+	else if (is_strings_equal(user_command, "level"))
+	{
+		print_level_of_access();
+	}
+
+	else if (is_strings_equal(user_command, "passwd"))
+	{
+		execute_passwd_command();
+	}
+
+	else if (is_strings_equal(user_command, "passwd-l"))
+	{
+		execute_passwd_dash_l_command();
+	}
+
+	else if (is_strings_equal(user_command, "hide"))
+	{
+		execute_hide_command();
+	}
+
+	else if (is_strings_equal(user_command, "hide-r"))
+	{
+		execute_hide_dash_r_command();
+	}
+
+	else if (is_strings_equal(user_command, "exif"))
+	{
+		execute_exif_command();
+	}
+
+	else if (is_strings_equal(user_command, "search"))
+	{
+		execute_search_command();
+	}
+
+	else
+	{
+		char redirection_command[3];
+		scanf("%s", redirection_command);
+
+		if (is_strings_equal(redirection_command, ">>"))
+		{
+			execute_greater_equal_command();
+		}
+		else if (is_strings_equal(redirection_command, ">"))
+		{
+			execute_greater_command();
+		}
+		else
+		{
+			handle_incorrect_command();
+		}
+	}
 }
-void hello()
+
+void handle_incorrect_command()
 {
-	setcolor(11);
+	boldred();
+	printf("incorrect command\n");
+	current_user.mistakes++;
+	update_usersinfo_file();
+}
+
+void execute_greater_equal_command()
+{
+	char file_name[100];
+	scanf("%s", file_name);
+	redirection_greater_equal_operand(user_command, file_name);
+}
+
+void execute_greater_command()
+{
+	char file_name[100];
+	scanf("%s", file_name);
+	redirection_greater_operand(user_command, file_name);
+}
+
+void execute_search_command()
+{
+	char entered_name[100];
+	getchar();
+	gets(entered_name);
+
+	FILE *fptr = fopen(entered_name, "rb");
+
+	if (fptr == NULL)
+	{
+		search_directory(entered_name);
+		fclose(fptr);
+	}
+	else
+	{
+		search_file(entered_name);
+	}
+}
+
+void execute_exif_command()
+{
+	getchar();
+	char file_name[100];
+	gets(file_name);
+	exif_file_command(file_name);
+	printf("\n");
+}
+
+void execute_hide_dash_r_command()
+{
+	getchar();
+	char file_name[100];
+	gets(file_name);
+	show_file_command(file_name);
+}
+
+void execute_hide_command()
+{
+	getchar();
+	char file_name[100];
+	gets(file_name);
+	hide_file_command(file_name);
+}
+
+void execute_passwd_dash_l_command()
+{
+	getchar();
+	if (level_of_access == 1)
+		pass2();
+	else
+	{
+		boldred();
+		printf("permission denied:(\n");
+	}
+}
+
+void execute_passwd_command()
+{
+	char entered_password[100];
+	getchar();
+	setcolor(9);
+	printf("please enter your current password: ");
+	gets(entered_password);
+
+	pass(entered_password);
+}
+
+void execute_mv_command()
+{
+	char file_name1[100];
+	char file_name2[100];
+
+	scanf("%s%s", file_name1, file_name2);
+	move_file_command(file_name1, file_name2);
+	printf("\n");
+}
+
+void execute_cp_command()
+{
+	char file_name1[100];
+	char file_name2[100];
+
+	scanf("%s%s", file_name1, file_name2);
+	copy_file_command(file_name1, file_name2);
+	printf("\n");
+}
+
+void execute_rm_dash_r_command()
+{
+
+	char directory_name[100];
+	scanf("%s", directory_name);
+
+	if (rmdir(directory_name) == 0)
+	{
+		setcolor(12);
+		printf("deleted successfully\n");
+	}
+	else
+	{
+		boldred();
+		printf("directory cannot be deleted or doesnt exist\n");
+	}
+}
+
+void execute_rm_command()
+{
+
+	char file_name[100];
+	scanf("%s", file_name);
+
+	if (remove(file_name) == 0)
+	{
+		setcolor(12);
+		printf("deleted successfully\n");
+	}
+	else
+	{
+		boldred();
+		printf("file cannot be deleted or doesnt exist\n");
+	}
+}
+
+void execute_wc_command()
+{
+	char file_name[1000];
+	scanf("%s", file_name);
+
+	word_count_command(file_name);
+	printf("\n");
+}
+
+void execute_cat_command()
+{
+	char file_name[1000];
+	scanf("%s", file_name);
+
+	cat_file_command(file_name);
+	printf("\n");
+}
+
+void execute_cd_command()
+{
+	char directory_address[1000];
+	getchar();
+	gets(directory_address);
+	chdir(directory_address);
+	printf("\n");
+}
+
+void execute_diff_command()
+{
+	char file_name1[100];
+	char file_name2[100];
+	scanf("%s%s", file_name1, file_name2);
+	// diff_files_command(file_name1, file_name2);
+
+	char diff_command[100] = "fc ";
+	strcat(diff_command, file_name1);
+	strcat(diff_command, " ");
+	strcat(diff_command, file_name2);
+	system(diff_command);
+
+	printf("\n");
+}
+
+void execute_create_command()
+{
+	char *user_name;
+	user_name = (char *)malloc(sizeof(char));
+	scanf("%s", user_name);
+
+	if (level_of_access == 1)
+	{
+		create_new_user_command(user_name);
+	}
+	else
+	{
+		boldred();
+		printf("permission denied\n");
+	}
+}
+
+void execute_ls_command()
+{
+	setcolor(14);
+	system("dir /b");
+	printf("\n");
+}
+
+void execute_exit_command()
+{
+	getchar();
+	system("cls");
+	boldred();
+	printf("END OF PROGRAM..\nGOOD BYE:)");
+}
+
+void create_directory_command()
+{
+	char directory_name[100];
+
+	getchar();
+	gets(directory_name);
+
+	CreateDirectory(directory_name, NULL);
+	setcolor(5);
+	printf("Directory created");
+	printf("\n");
+}
+
+bool is_strings_equal(char str1[], const char str2[])
+{
+	return strcmp(str1, str2) == 0;
+}
+
+void print_welcome_messages()
+{
+	setcolor(2);
 	printf("\n\n\n\n\n\n\n\n\t\t\t\t\t**********************************\n");
 	printf("\t\t\t\t\t\t******************\n");
 	printf("\t\t\t\t\t\tWELCOME \n\t\t\t\t\t\tTO\n\t\t\t\t\t        MY TERMINAL:)   \n\t\t\t\t\t\tHOPE TO ENGOY\n");
@@ -382,9 +624,11 @@ void hello()
 	system("cls");
 }
 
-int pwd()
+int print_working_directory()
 {
 	char cwd[PATH_MAX];
+
+	// setcolor(12);
 	if (getcwd(cwd, sizeof(cwd)) != NULL)
 	{
 		setcolor(11);
@@ -393,58 +637,71 @@ int pwd()
 	}
 	else
 	{
-		perror("getcwd() error");
+		perror("getcwd() error\n");
 		return 1;
 	}
 }
 
-void makedir(char dirname[])
+void make_directory(char directory_name[])
 {
 	int check;
-	check = mkdir(dirname);
+	check = mkdir(directory_name);
+
 	if (!check)
 		return;
-	else
-	{
-		boldred();
-		printf("Unable to create directory:(\n");
-		exit(1);
-	}
+
+	boldred();
+	printf("Unable to create directory:(\n");
+	exit(1);
 }
-void increse(char username[])
+
+void execute_chgr_command()
+{
+	char username[100];
+	scanf("%s", username);
+	increse_user_access_level(username);
+}
+
+void increse_user_access_level(char username[])
 {
 	int i, j;
 	char cwd[PATH_MAX];
-	getcwd(cwd, sizeof(cwd));
 	char now[1000];
+
+	getcwd(cwd, sizeof(cwd));
 	strcpy(now, cwd);
-	chdir("C:/Users/Win 10/Desktop/root/hadis80/");
+	chdir(PROGRAM_DIRECTORY);
+
 	FILE *fptr = fopen("usersinfo.txt", "wb");
-	for (j = 0; j < numberofusers + 1; j++)
+
+	for (j = 0; j < number_of_users + 1; j++)
 	{
-		fwrite(&s[j], sizeof(struct user), 1, fptr);
+		fwrite(&users[j], sizeof(struct user), 1, fptr);
 	}
+
 	fclose(fptr);
+
 	fptr = fopen("usersinfo.txt", "rb");
 
-	if (levelofaccess == 1) // presentuser.access==1
+	if (level_of_access == 1) // current_user.access==1
 	{
-		for (i = 0; i < numberofusers + 1; i++)
+		for (i = 0; i < number_of_users + 1; i++)
 		{
-			fread(&s[i], sizeof(struct user), 1, fptr);
-			if (strcmp(s[i].username, username) == 0)
+			fread(&users[i], sizeof(struct user), 1, fptr);
+
+			if (strcmp(users[i].username, username) == 0)
 			{
-				if (s[i].access == 0 && s[i].mistakes < 11 && s[i].strength > 75)
+				if (users[i].access == 0 && users[i].mistakes < 11 && users[i].strength > 75)
 				{
-					s[i].access = 1;
-					levelofaccess = 1;
+					users[i].access = 1;
+					level_of_access = 1;
 					setcolor(11);
-					printf("user with %s  username became admin:)\n", s[i].username);
+					printf("user with %s  username became admin:)\n", users[i].username);
 					fclose(fptr);
 					fptr = fopen("usersinfo.txt", "wb");
-					for (i = 0; i < numberofusers + 1; i++)
+					for (i = 0; i < number_of_users + 1; i++)
 					{
-						fwrite(&s[i], sizeof(struct user), 1, fptr);
+						fwrite(&users[i], sizeof(struct user), 1, fptr);
 					}
 					fclose(fptr);
 					chdir(now);
@@ -452,7 +709,8 @@ void increse(char username[])
 				}
 			}
 		}
-		if (i == numberofusers + 1)
+
+		if (i == number_of_users + 1)
 		{
 			setcolor(12);
 			printf("user %s cannot be admin:(\n", username);
@@ -466,40 +724,62 @@ void increse(char username[])
 		setcolor(12);
 		printf("permission denied:(\n");
 	}
+
 	fclose(fptr);
 	chdir(now);
+
 	return;
 }
-void su(char username[100])
+
+void execute_su_command()
+{
+	char username[100];
+	scanf("%s", username);
+	getchar();
+	switch_user_command(username);
+}
+
+void switch_user_command(char username[100])
 {
 	char cwd[PATH_MAX];
-	getcwd(cwd, sizeof(cwd));
 	char now2[1000];
-	strcpy(now2, cwd);
-	chdir("C:/Users/Win 10/Desktop/root/hadis80/");
 	char time3[100], pass[100];
+
+	getcwd(cwd, sizeof(cwd));
+	strcpy(now2, cwd);
+
+	chdir(PROGRAM_DIRECTORY);
+
 	time_t now;
 	struct tm *ts;
+
 	now = time(NULL);
 	ts = localtime(&now);
+
 	setcolor(10);
 	strftime(time3, sizeof(time3), "%Y/%m/%d %H:%M:%S", ts); // time now
 	FILE *fptr = fopen("usersinfo.txt", "wb");
-	for (int j = 0; j < numberofusers + 1; j++)
+
+	for (int j = 0; j < number_of_users + 1; j++)
 	{
-		fwrite(&s[j], sizeof(struct user), 1, fptr);
+		fwrite(&users[j], sizeof(struct user), 1, fptr);
 	}
+
 	fclose(fptr);
+
 	fptr = fopen("usersinfo.txt", "rb");
+
 	int i;
-	if (levelofaccess == 1)
+
+	if (level_of_access == 1)
 	{
-		for (i = 0; i < numberofusers + 1; i++)
+		for (i = 0; i < number_of_users + 1; i++)
 		{
-			fread(&s[i], sizeof(struct user), 1, fptr);
-			if (strcmp(s[i].username, username) == 0)
+			fread(&users[i], sizeof(struct user), 1, fptr);
+
+			if (strcmp(users[i].username, username) == 0)
 			{
-				if (strcmp(s[i].time, time3) <= 0)
+				if (strcmp(users[i].time, time3) <= 0)
 				{
 					setcolor(12);
 					printf("the time for user %s has finished:(\nso suer %s cannot access to terminal any more:(\n", username, username);
@@ -507,25 +787,27 @@ void su(char username[100])
 					chdir(now2);
 					return;
 				}
-				levelofaccess = s[i].access;
-				presentuser = s[i];
+				level_of_access = users[i].access;
+				current_user = users[i];
 				break;
 			}
 		}
-		if (i == numberofusers + 1)
+
+		if (i == number_of_users + 1)
 		{
 			setcolor(12);
 			printf("permission denied:(\n");
 		}
+
 		else
 		{
 
-			char add[1000] = "C:/Users/Win 10/Desktop/root/";
-			strcat(add, username);
+			char address[1000] = "C:/Users/Win 10/Desktop/root/";
+			strcat(address, username);
 
 			setcolor(9);
 			printf("WELCOME %s USER:)", username);
-			chdir(add);
+			chdir(address);
 			getchar();
 			system("cls");
 		}
@@ -535,12 +817,14 @@ void su(char username[100])
 		setcolor(11);
 		printf("\nuser %s please enter your pass: ", username);
 		gets(pass);
-		for (i = 0; i < numberofusers + 1; i++)
+
+		for (i = 0; i < number_of_users + 1; i++)
 		{
-			fread(&s[i], sizeof(struct user), 1, fptr);
-			if (strcmp(s[i].username, username) == 0 && strcmp(s[i].passwd, pass) == 0)
+			fread(&users[i], sizeof(struct user), 1, fptr);
+
+			if (strcmp(users[i].username, username) == 0 && strcmp(users[i].passwd, pass) == 0)
 			{
-				if (strcmp(s[i].time, time3) <= 0)
+				if (strcmp(users[i].time, time3) <= 0)
 				{
 					setcolor(12);
 					printf("the time for user %s has finished:(\nso suer %s cannot access to terminal any more:(\n", username, username);
@@ -548,12 +832,12 @@ void su(char username[100])
 					chdir(now2);
 					return;
 				}
-				levelofaccess = s[i].access;
-				presentuser = s[i];
+				level_of_access = users[i].access;
+				current_user = users[i];
 				break;
 			}
 		}
-		if (i == numberofusers + 1)
+		if (i == number_of_users + 1)
 		{
 			setcolor(12);
 			printf("permission denied:(\n");
@@ -564,9 +848,9 @@ void su(char username[100])
 		else
 		{
 
-			char add[1000] = "C:/Users/Win 10/Desktop/root/";
-			strcat(add, username);
-			chdir(add);
+			char address[1000] = "C:/Users/Win 10/Desktop/root/";
+			strcat(address, username);
+			chdir(address);
 			setcolor(9);
 			printf("WELCOME %s USER:)", username);
 			getchar();
@@ -575,35 +859,46 @@ void su(char username[100])
 		}
 	}
 }
-void createuser(char name[])
+
+void create_new_user_command(char user_name[])
 {
-	setcolor(11);
-	numberofusers++;
-	char add[1000];
-	// strcat()
 	char cwd[PATH_MAX];
+	char current_working_directory_copy[1000];
+
+	number_of_users++;
+
+	setcolor(11);
 	getcwd(cwd, sizeof(cwd));
-	char now[1000];
-	strcpy(now, cwd);
-	chdir("C:/Users/Win 10/Desktop/root/");
-	makedir(name);
-	chdir("C:/Users/Win 10/Desktop/root/hadis80/");
-	creatfile(name);
-	chdir(now);
+	strcpy(current_working_directory_copy, cwd);
+
+	chdir(PROGRAM_DIRECTORY);
+	chdir("..");
+	make_directory(user_name);
+
+	chdir(PROGRAM_DIRECTORY);
+	create_new_user_file(user_name);
+
+	chdir(current_working_directory_copy);
+	printf("\n");
 }
-void creatfile(char name[])
+
+void create_new_user_file(char file_name[])
 {
 	setcolor(11);
-	FILE *fptr2 = fopen("usersinfo.txt", "ab+");
-	// FILE *fptr=fopen(name,"wb");
+	FILE *file = fopen("usersinfo.txt", "ab+");
+
 	printf("enter name: ");
-	scanf("%s", s[numberofusers].name);
+	scanf("%s", users[number_of_users].name);
+
 	printf("enter username: ");
-	scanf("%s", s[numberofusers].username);
+	scanf("%s", users[number_of_users].username);
+
 	printf("choose password: ");
-	gets(s[numberofusers].passwd);
+	gets(users[number_of_users].passwd);
+
 	int s2, n, i = 0;
-	n = strength_pass(s[numberofusers].passwd);
+	n = get_password_strength(users[number_of_users].passwd);
+
 	if (n > 34)
 	{
 		setcolor(12);
@@ -612,11 +907,10 @@ void creatfile(char name[])
 	}
 	else
 	{
-		// printf("the password is too weak enter another password: ");
 		while (n < 34)
 		{
-			gets(s[numberofusers].passwd);
-			n = strength_pass(s[numberofusers].passwd);
+			gets(users[number_of_users].passwd);
+			n = get_password_strength(users[number_of_users].passwd);
 			if (n > 33)
 			{
 				setcolor(12);
@@ -629,15 +923,18 @@ void creatfile(char name[])
 			i++;
 		}
 	}
-	setcolor(11);
-	printf("please enter the time : ");
-	gets(s[numberofusers].time);
-	s[numberofusers].strength = s2;
-	s[numberofusers].access = 0;
-	s[numberofusers].mistakes = 0;
 
-	fwrite(&s[numberofusers], sizeof(struct user), 1, fptr2);
-	//	fwrite(&s,sizeof(struct user),1,fptr2);
+	setcolor(11);
+
+	printf("please enter the time : ");
+	gets(users[number_of_users].time);
+
+	users[number_of_users].strength = s2;
+	users[number_of_users].access = 0;
+	users[number_of_users].mistakes = 0;
+
+	fwrite(&users[number_of_users], sizeof(struct user), 1, file);
+
 	if (fwrite != 0)
 	{
 		setcolor(11);
@@ -649,86 +946,122 @@ void creatfile(char name[])
 		setcolor(12);
 		printf("error saving data:(\n");
 	}
-	//	fclose(fptr);
-	fclose(fptr2);
+
+	fclose(file);
 }
-int strength_pass(char pass[])
+
+int get_password_strength(char entered_password[])
 {
-	int i, n = 0, j = 0;
-	for (i = 0; i < strlen(pass); i++)
+	int i, password_strength = 0;
+	char character;
+
+	for (i = 0; i < strlen(entered_password); i++)
 	{
-		char c;
-		c = pass[i];
-		if (ispunct(c))
-			n += 8;
-		if (isdigit(c))
-			n += 3;
-		if (isalpha(c))
+		character = entered_password[i];
+
+		if (ispunct(character))
 		{
-			if (isupper(c))
-				n += 4;
-			else
-				n += 2;
+			password_strength += 8;
 		}
-		if (c == ' ')
-			n += 1;
+
+		if (isdigit(character))
+		{
+			password_strength += 3;
+		}
+
+		if (isalpha(character))
+		{
+			if (isupper(character))
+				password_strength += 4;
+			else
+				password_strength += 2;
+		}
+
+		if (character == ' ')
+		{
+			password_strength += 1;
+		}
 	}
-	return n;
+
+	return password_strength;
 }
-void wc(char name[])
+
+void word_count_command(char file_name[])
 {
-	FILE *fptr = fopen(name, "rb");
+	FILE *fptr = fopen(file_name, "rb");
+
 	if (fptr == NULL)
 	{
 		setcolor(12);
-		printf("no such file:(");
+		printf("file does not exist:(");
 		return;
 	}
-	int m = 1, k = 0, w = 1;
-	char c;
-	while ((c = fgetc(fptr)) != EOF)
+
+	int line_counter = 1, character_counter = 0, words_counter = 1;
+	char file_character;
+
+	while ((file_character = fgetc(fptr)) != EOF)
 	{
-		if (c == '\n')
-			m++;
-		if (c == ' ' || c == '\n')
-			w++;
-		k++;
+		if (file_character == '\n')
+		{
+			line_counter++;
+		}
+
+		if (file_character == ' ' || file_character == '\n')
+		{
+
+			words_counter++;
+		}
+
+		character_counter++;
 	}
+
 	fclose(fptr);
 	setcolor(11);
-	printf("the number of lines and words and characters in the %s file : %d  %d  %d", name, m, w, k);
 
+	printf("the number of lines and words and characters in the %s file : %d  %d  %d", file_name, line_counter, words_counter, character_counter);
 	return;
 }
-void cat(char name[])
+
+void cat_file_command(char file_name[])
 {
 	setcolor(11);
-	FILE *fptr = fopen(name, "rb");
+	FILE *fptr = fopen(file_name, "rb");
+
 	if (fptr == NULL)
 	{
-		printf("no such file:(");
+		printf("file does not exist:(");
 		return;
 	}
-	char c;
-	while ((c = fgetc(fptr)) != EOF)
+
+	char file_character;
+
+	while ((file_character = fgetc(fptr)) != EOF)
 	{
-		printf("%c", c);
+		printf("%c", file_character);
 	}
+
 	fclose(fptr);
 	return;
 }
-void diff(char name1[], char name2[]) //
+
+void diff_files_command(char file_name1[], char file_name2[])
 {
-	FILE *fp1 = fopen(name1, "rb");
-	FILE *fp2 = fopen(name2, "rb");
+	printf("\nname1: %s name2: %s\n", file_name1, file_name2);
+	FILE *fp1 = fopen(file_name1, "rb");
+	FILE *fp2 = fopen(file_name2, "rb");
+
 	if (fp1 == NULL || fp2 == NULL)
 	{
 		printf("no such file:(");
 		return;
 	}
+
 	char ch1 = getc(fp1);
 	char ch2 = getc(fp2);
+
 	int error = 0, pos = 0, line = 1;
+
 	while (ch1 != EOF && ch2 != EOF)
 	{
 		pos++;
@@ -737,6 +1070,7 @@ void diff(char name1[], char name2[]) //
 			line++;
 			pos = 0;
 		}
+
 		if (ch1 != ch2)
 		{
 			error++;
@@ -745,36 +1079,50 @@ void diff(char name1[], char name2[]) //
 		ch1 = getc(fp1);
 		ch2 = getc(fp2);
 	}
+
 	printf("Total Errors : %d\t", error);
 	fclose(fp1);
 	fclose(fp2);
 	return;
 }
-void printdir(struct user presentuser)
+
+void print_user_directory_details(struct user current_user)
 {
 	char cwd[1024];
 	getcwd(cwd, sizeof(cwd));
-	if (presentuser.access == 0)
+
+	if (current_user.access == 0)
 	{
-		setcolor(11);
-		printf("%s@%s:", presentuser.name, presentuser.username);
-		setcolor(9);
-		printf("Dir: %s", cwd);
-		setcolor(11);
-		printf("$");
+		print_normal_user_directory_info(current_user, cwd);
 	}
 	else
 	{
-		setcolor(9);
-		printf("[adminstrator]");
-		setcolor(3);
-		printf("%s@%s:", presentuser.name, presentuser.username);
-		printf("Dir:%s", cwd);
-		setcolor(1);
-		printf("#");
+		print_admin_user_directory_info(current_user, cwd);
 	}
 }
-void copy(char name[], char name2[])
+
+void print_normal_user_directory_info(struct user current_user, char cwd[])
+{
+	setcolor(11);
+	printf("%s@%s:", current_user.name, current_user.username);
+	setcolor(9);
+	printf("Dir: %s", cwd);
+	setcolor(11);
+	printf("$");
+}
+
+void print_admin_user_directory_info(struct user current_user, char cwd[])
+{
+	setcolor(5);
+	printf("[adminstrator]");
+	setcolor(3);
+	printf("%s@%s:", current_user.name, current_user.username);
+	printf("Dir:%s", cwd);
+	setcolor(5);
+	printf("#");
+}
+
+void copy_file_command(char name[], char name2[])
 {
 	setcolor(11);
 	FILE *fptr1 = fopen(name, "rb");
@@ -841,34 +1189,39 @@ void copy(char name[], char name2[])
 	}
 }
 
-void move(char name[], char name2[])
+void move_file_command(char file_name1[], char file_name2[])
 {
 	setcolor(11);
-	FILE *fptr1 = fopen(name, "rb");
-	FILE *fptr2 = fopen(name2, "rb");
+	FILE *fptr1 = fopen(file_name1, "rb");
+	FILE *fptr2 = fopen(file_name2, "rb");
+
 	if (fptr1 == NULL)
 	{
-		printf("file %s doesnt exist:(", name);
+		printf("file %s doesnt exist:(", file_name1);
 		return;
 	}
+
 	if (fptr2 != NULL)
 	{
-		printf("the %s already exist\ndo you want to overwrite it:y/n ?\n", name2);
-		int c;
-		c = getch();
-		if (c == 'y')
+		printf("the %s already exist\ndo you want to overwrite it:y/n ?\n", file_name2);
+		int is_file_overwritten;
+		is_file_overwritten = getch();
+		if (is_file_overwritten == 'y')
 		{
 			fclose(fptr2);
-			fptr2 = fopen(name2, "wb"); // overwrite
+			fptr2 = fopen(file_name2, "wb"); // overwrite
 			char ch;
 			ch = fgetc(fptr1);
+
 			while (!feof(fptr1))
 			{
 				fputc(ch, fptr2);
 				ch = fgetc(fptr1);
 			}
+
 			fclose(fptr1);
-			if (remove(name) == 0)
+
+			if (remove(file_name1) == 0)
 				printf("file moved successfully:)\n");
 			else
 				printf("cannot move:(\n");
@@ -878,16 +1231,19 @@ void move(char name[], char name2[])
 		else
 		{
 			fclose(fptr2);
-			fptr2 = fopen(name2, "ab+"); // append
+			fptr2 = fopen(file_name2, "ab+"); // append
 			char ch;
 			ch = fgetc(fptr1);
+
 			while (!feof(fptr1))
 			{
 				fputc(ch, fptr2);
 				ch = fgetc(fptr1);
 			}
+
 			fclose(fptr1);
-			if (remove(name) == 0)
+
+			if (remove(file_name1) == 0)
 				printf("file moved successfully:)\n");
 			else
 				printf("cannot move:(\n");
@@ -898,41 +1254,47 @@ void move(char name[], char name2[])
 	else
 	{
 		fclose(fptr2);
-		fptr2 = fopen(name2, "wb");
+		fptr2 = fopen(file_name2, "wb");
+
 		char ch;
 		ch = fgetc(fptr1);
+
 		while (!feof(fptr1))
 		{
 			fputc(ch, fptr2);
 			ch = fgetc(fptr1);
 		}
+
 		fclose(fptr1);
-		if (remove(name) == 0)
+
+		if (remove(file_name1) == 0)
 			printf("file moved successfully:)\n");
 		else
 			printf("cannot move:(\n");
+
 		fclose(fptr2);
 		return;
 	}
 }
 
-void operand(char name1[], char name2[]) //>
+void redirection_greater_operand(char file_name1[], char file_name2[]) //>
 {
 	setcolor(11);
-	FILE *fptr1 = fopen(name1, "rb");
-	FILE *fptr2 = fopen(name2, "wb");
+	FILE *fptr1 = fopen(file_name1, "rb");
+	FILE *fptr2 = fopen(file_name2, "wb");
+
 	if (fptr1 == NULL)
 	{
 
-		fprintf(fptr2, "%s", name1);
+		fprintf(fptr2, "%s", file_name1);
 		fclose(fptr2);
 		return;
 	}
 	else
 	{
-		printf("keep file %s? y/n\n", name1);
-		int n = getch();
-		if (n == 'y')
+		printf("keep file %s? y/n\n", file_name1);
+		int is_file_kept = getch();
+		if (is_file_kept == 'y')
 		{
 
 			char ch;
@@ -942,6 +1304,7 @@ void operand(char name1[], char name2[]) //>
 				fputc(ch, fptr2);
 				ch = fgetc(fptr1);
 			}
+
 			fclose(fptr1);
 			fclose(fptr2);
 		}
@@ -954,22 +1317,24 @@ void operand(char name1[], char name2[]) //>
 				fputc(ch, fptr2);
 				ch = fgetc(fptr1);
 			}
+
 			fclose(fptr1);
 			fclose(fptr2);
-			remove(name1);
+			remove(file_name1);
 		}
 	}
 	return;
 }
 
-void operand2(char name1[], char name2[]) //>>
+void redirection_greater_equal_operand(char file_name1[], char file_name2[]) //>>
 {
 	setcolor(11);
-	FILE *fptr1 = fopen(name1, "rb");
-	FILE *fptr2 = fopen(name2, "ab+");
+	FILE *fptr1 = fopen(file_name1, "rb");
+	FILE *fptr2 = fopen(file_name2, "ab+");
+
 	if (fptr1 == NULL)
 	{
-		fprintf(fptr2, "%s", name1);
+		fprintf(fptr2, "%s", file_name1);
 		fclose(fptr2);
 		return;
 	}
@@ -980,9 +1345,10 @@ void operand2(char name1[], char name2[]) //>>
 	}
 	else
 	{
-		printf("keep file %s? y/n\n", name1);
-		int n = getch();
-		if (n == 'y')
+		printf("keep file %s? y/n\n", file_name1);
+		int is_file_kept = getch();
+
+		if (is_file_kept == 'y')
 		{
 			char ch;
 			ch = fgetc(fptr1);
@@ -1005,143 +1371,164 @@ void operand2(char name1[], char name2[]) //>>
 			}
 			fclose(fptr1);
 			fclose(fptr2);
-			remove(name1);
+			remove(file_name1);
 		}
 	}
 	return;
 }
-void help()
+
+void help_command()
 {
 	do
 	{
-		system("cls");
-		setcolor(6);
-		printf("\n\t\t\t\t*********   HELP   *********");
-		printf("\n\n\t\t\tMENU-----:\n ");
-		printf("\t\there are commands and a short introduction\n");
-		printf("\t\tenter one of below numbers\n");
-		setcolor(14);
-		printf("\t\t1.cd directoryname\n\t\t2.pwd\n\t\t3.mkdir directoryname\n\t\t4.wc filename\n\t\t5.cat filename\n\t\t6.rm and rm-r filename"
-			   "\n\t\t7.cp filename1 filename2\n\t\t8.mv filename1 filename2\n\t\t"
-			   "9.ls\n\t\t10.>> or >\n\t\t11.create username\n\t\t12.su username\n\t\t13.passwd\n\t\t"
-			   "14.diff filename1 filename2\n\t\t15.exif filename\n\t\t16.chgr username\n\t\t17.time\n\t\t18.time-a\n\t\t19.hide/hide-r\n\t\t"
-			   "20.search filename or directory\n\t\t21.EXIT\n");
-		int y;
-		printf("\t\tenter your choice :");
-		scanf("%d", &y);
-		printf("\n");
-		setcolor(14);
-		switch (y)
-		{
-			setcolor(14);
-		case 1:
-			printf("command cd : it changes the directory.\nnote that you can use it with  absolute or relative address.\n"
-				   "an example for relative address : cd ../root/filename\nan example for absolute address : cd C:/Users/Win 10/Desktop/root/");
-			getch();
-			break;
-		case 2:
-			printf("command pwd : it will show the address of where you are:)");
-			getch();
-			break;
-		case 3:
-			intromkdir();
-			break;
-		case 4:
-			printf("command wc filename :it will show the number of lines and words and characters of a file.");
-			getch();
-			break;
-		case 5:
-			printf("command cat filename : it will show the contents of a file.");
-			getch();
-			break;
-		case 6:
-			printf("commad rm filename : it will delete a file\ncommand rm-r filename : it will delete a directory. ");
-			getch();
-			break;
-		case 7:
-			printf("command cp filename1 filename2 : it will copy the contents of file1 to file2.\n"
-				   "note that it will ask you to choose wethere you want to delete the contents of  file2 or not:)");
-			getch();
-			break;
-		case 8:
-			printf("command mv filename1 filename2 : it will move the contents of file1 to file2.so file1 will remove:-)\n"
-				   "note that it will ask you to choose wethere you want to delete the contents of  file2 or not:)");
-			getch();
-			break;
-		case 9:
-			printf("command ls : it will show you the files and directories in the situation that you are.");
-			getch();
-			break;
-		case 10:
-			intro();
-			getch();
-			break;
-		case 11:
-			printf("command create username : it will create a user and a directory for user with his/her username.");
-			getch();
-			break;
-		case 12:
-			printf("command su username : it will change the current user to the username you inserted.");
-			getch();
-			break;
-		case 13:
-			printf("command passwd : it will change the password of the current user and"
-				   " if the current user is admin then with command (passwd -l time username) admin can change the password of a user and set a time for user.");
-			getch();
-			break;
-		case 14:
-			printf("command diff filename1 filename2 : it will show the places of where two files are differents and show how many different they have.");
-			getch();
-			break;
-		case 15:
-			printf("command exif filename : it will show you some information about"
-				   "a file like the time it was created and the last time it has changed");
-			getch();
-			break;
-		case 16:
-			printf("command chgr username : it will change the normal user to admin in 3conditions:\n1."
-				   "first: the users`mistakes should be less than 11\n2.second: the users`password should have strength more than 75"
-				   "\n3.the time for user should be okay:)");
-			getch();
-			break;
-		case 17:
-			printf("command time :it will show the systems`time:)");
-			getch();
-			break;
-		case 18:
-			printf("command time-a :it will show the time more accurate:)");
-			getch();
-			break;
-		case 19:
-			printf("command hide filename :it will disappeare the file.\n"
-				   "so when you print (ls) it will not be displayed.\ncommand hide-r filename: it acts as opposite of hide."
-				   "\nit will  show the file or directory:)");
-			getch();
-			break;
-		case 20:
-			printf("command search filename or directoryname:\nit will show the address of file or directory:)");
-			getch();
-			break;
-		case 21:
-			getchar();
-			system("cls");
-			return;
-		default:
-			printf("error!!");
-			getch();
-		}
+		help_command_summery();
+		int selected_command;
+		selected_command = get_help_selected_choice();
+		handle_help_command_selection(selected_command);
+
 	} while (1);
 
 	return;
 }
-void intromkdir()
+
+void help_command_summery()
+{
+	system("cls");
+	setcolor(6);
+	printf("\n\t\t\t\t*********   HELP   *********");
+	printf("\n\n\t\t\tMENU-----:\n ");
+	printf("\t\there are commands and a short introduction\n");
+	printf("\t\tenter one of below numbers\n");
+	setcolor(14);
+	printf("\t\t1.cd directoryname\n\t\t2.pwd\n\t\t3.mkdir directoryname\n\t\t4.wc filename\n\t\t5.cat filename\n\t\t6.rm and rm-r filename"
+		   "\n\t\t7.cp filename1 filename2\n\t\t8.mv filename1 filename2\n\t\t"
+		   "9.ls\n\t\t10.>> or >\n\t\t11.create username\n\t\t12.su username\n\t\t13.passwd\n\t\t"
+		   "14.diff filename1 filename2\n\t\t15.exif filename\n\t\t16.chgr username\n\t\t17.time\n\t\t18.time-a\n\t\t19.hide/hide-r\n\t\t"
+		   "20.search filename or directory\n\t\t21.EXIT\n");
+}
+
+int get_help_selected_choice()
+{
+	setcolor(14);
+	int selected_command;
+	printf("\t\tenter your choice :");
+	scanf("%d", &selected_command);
+	printf("\n");
+	return selected_command;
+}
+
+void handle_help_command_selection(int selected_command)
+{
+	switch (selected_command)
+	{
+		setcolor(14);
+	case 1:
+		printf("command cd : it changes the directory.\nnote that you can use it with  absolute or relative address.\n"
+			   "an example for relative address : cd ../root/filename\nan example for absolute address : cd C:/Users/Win 10/Desktop/root/");
+		getch();
+		break;
+	case 2:
+		printf("command pwd : it will show the address of where you are:)");
+		getch();
+		break;
+	case 3:
+		mkdir_command_help();
+		break;
+	case 4:
+		printf("command wc filename :it will show the number of lines and words and characters of a file.");
+		getch();
+		break;
+	case 5:
+		printf("command cat filename : it will show the contents of a file.");
+		getch();
+		break;
+	case 6:
+		printf("commad rm filename : it will delete a file\ncommand rm-r filename : it will delete a directory. ");
+		getch();
+		break;
+	case 7:
+		printf("command cp filename1 filename2 : it will copy the contents of file1 to file2.\n"
+			   "note that it will ask you to choose wethere you want to delete the contents of  file2 or not:)");
+		getch();
+		break;
+	case 8:
+		printf("command mv filename1 filename2 : it will move the contents of file1 to file2.so file1 will remove:-)\n"
+			   "note that it will ask you to choose wethere you want to delete the contents of  file2 or not:)");
+		getch();
+		break;
+	case 9:
+		printf("command ls : it will show you the files and directories in the situation that you are.");
+		getch();
+		break;
+	case 10:
+		redirection_command_help();
+		getch();
+		break;
+	case 11:
+		printf("command create username : it will create a user and a directory for user with his/her username.");
+		getch();
+		break;
+	case 12:
+		printf("command su username : it will change the current user to the username you inserted.");
+		getch();
+		break;
+	case 13:
+		printf("command passwd : it will change the password of the current user and"
+			   " if the current user is admin then with command (passwd -l time username) admin can change the password of a user and set a time for user.");
+		getch();
+		break;
+	case 14:
+		printf("command diff filename1 filename2 : it will show the places of where two files are differents and show how many different they have.");
+		getch();
+		break;
+	case 15:
+		printf("command exif filename : it will show you some information about"
+			   "a file like the time it was created and the last time it has changed");
+		getch();
+		break;
+	case 16:
+		printf("command chgr username : it will change the normal user to admin in 3conditions:\n1."
+			   "first: the users`mistakes should be less than 11\n2.second: the users`password should have strength more than 75"
+			   "\n3.the time for user should be okay:)");
+		getch();
+		break;
+	case 17:
+		printf("command time :it will show the systems`time:)");
+		getch();
+		break;
+	case 18:
+		printf("command time-a :it will show the time more accurate:)");
+		getch();
+		break;
+	case 19:
+		printf("command hide filename :it will disappeare the file.\n"
+			   "so when you print (ls) it will not be displayed.\ncommand hide-r filename: it acts as opposite of hide."
+			   "\nit will  show the file or directory:)");
+		getch();
+		break;
+	case 20:
+		printf("command search filename or directoryname:\nit will show the address of file or directory:)");
+		getch();
+		break;
+	case 21:
+		getchar();
+		system("cls");
+		return;
+	default:
+		printf("error!!");
+		getch();
+	}
+}
+
+void mkdir_command_help()
 {
 	printf("command mkdir : it will make a directory.\n"
 		   "note that you can use address and say where you want to make the directory"
 		   "\nan example for relative address : mkdir ../root/filename\nan example for absolute address : cd C:/Users/Win 10/Desktop/root/");
 	getch();
 }
-void intro()
+
+void redirection_command_help()
 {
 	printf("command > : if you write a word then put (>) and then enter the name of file"
 		   " like(hello > filename) it will append the word(hello) to the file.\nnote that using (>) will delete your file.\n"
@@ -1153,90 +1540,113 @@ void intro()
 		   " and the contents of file2 will not remove.");
 	getch();
 }
-void update()
+
+void update_usersinfo_file()
+{
+	read_usersinfo_file();
+	write_usersinfo_file();
+}
+
+void read_usersinfo_file()
 {
 	FILE *fptr = fopen("usersinfo.txt", "rb");
 	int i;
-	for (i = 0; i < numberofusers + 1; i++)
-	{
-		fread(&s[i], sizeof(struct user), 1, fptr);
-		if (strcmp(s[i].username, presentuser.username) == 0)
-		{
 
+	for (i = 0; i < number_of_users + 1; i++)
+	{
+		fread(&users[i], sizeof(struct user), 1, fptr);
+
+		if (is_strings_equal(users[i].username, current_user.username))
+		{
 			break;
 		}
 	}
-	s[i] = presentuser;
-	fclose(fptr);
-	fptr = fopen("usersinfo.txt", "wb");
-	for (int j = 0; j < numberofusers + 1; j++)
-	{
-		fwrite(&s[j], sizeof(struct user), 1, fptr);
-	}
-	fclose(fptr);
-	return;
-}
-void showtime()
-{
-	setcolor(11);
-	time_t s3, val = 1;
-	struct tm *current_time;
-	s3 = time(NULL);
-	current_time = localtime(&s3);
-	printf("%02d:%02d:%02d\n",
-		   current_time->tm_hour,
-		   current_time->tm_min,
-		   current_time->tm_sec);
-}
-void showtime2()
-{
-	setcolor(11);
-	time_t now;
-	struct tm *ts;
-	char buf[80], buf2[80];
-	now = time(NULL);
 
-	ts = localtime(&now);
-	strftime(buf, sizeof(buf), "%B %A %Y-%m-%d %H:%M:%S %p %Z", ts);
-	puts(buf);
+	users[i] = current_user;
+	fclose(fptr);
+}
+
+void write_usersinfo_file()
+{
+	FILE *fptr = fopen("usersinfo.txt", "wb");
+
+	for (int j = 0; j < number_of_users + 1; j++)
+	{
+		fwrite(&users[j], sizeof(struct user), 1, fptr);
+	}
+
+	fclose(fptr);
+}
+
+void show_time_command()
+{
+	time_t current_system_time;
+	struct tm *current_local_time;
+
+	current_system_time = time(NULL);
+	current_local_time = localtime(&current_system_time);
+
+	setcolor(2);
+	printf("%02d:%02d:%02d\n",
+		   current_local_time->tm_hour,
+		   current_local_time->tm_min,
+		   current_local_time->tm_sec);
+}
+
+void show_accurate_time_command()
+{
+	char current_time_str[80];
+	struct tm *current_local_time;
+
+	time_t current_system_time;
+	current_system_time = time(NULL);
+	current_local_time = localtime(&current_system_time);
+
+	setcolor(2);
+	strftime(current_time_str, sizeof(current_time_str), "%B %A %Y-%m-%d %H:%M:%S %p %Z", current_local_time);
+	puts(current_time_str);
 	printf("\n");
 }
-void level()
+
+void print_level_of_access()
 {
-	printf("%d\n", levelofaccess);
+	printf("%d\n", level_of_access);
 }
+
 void pass(char p[])
 {
 	char cwd[PATH_MAX];
-	getcwd(cwd, sizeof(cwd));
 	char now[1000];
-	strcpy(now, cwd);
-	chdir("C:/Users/Win 10/Desktop/root/hadis80/");
 	char pass2[100];
-	if (strcmp(p, presentuser.passwd) == 0)
+
+	getcwd(cwd, sizeof(cwd));
+	strcpy(now, cwd);
+	// chdir();
+
+	if (strcmp(p, current_user.passwd) == 0)
 	{
 		setcolor(11);
 		printf("please enter your new password: ");
 		gets(pass2);
 
 		int s2, n, i = 0;
-		n = strength_pass(pass2);
+		n = get_password_strength(pass2);
 		if (n > 34)
 		{
-			strcpy(presentuser.passwd, pass2);
-			presentuser.strength = n;
-			update();
+			strcpy(current_user.passwd, pass2);
+			current_user.strength = n;
+			update_usersinfo_file();
 			FILE *fptr = fopen("usersinfo.txt", "rb");
-			for (int i = 0; i < numberofusers + 1; i++)
+			for (int i = 0; i < number_of_users + 1; i++)
 			{
-				fread(&s[i], sizeof(struct user), 1, fptr);
-				if (strcmp(s[i].username, presentuser.username) == 0)
+				fread(&users[i], sizeof(struct user), 1, fptr);
+				if (strcmp(users[i].username, current_user.username) == 0)
 				{
 					fclose(fptr);
 					fptr = fopen("usersinfo.txt", "wb");
-					for (int j = 0; j < numberofusers + 1; j++)
+					for (int j = 0; j < number_of_users + 1; j++)
 					{
-						fwrite(&s[j], sizeof(struct user), 1, fptr);
+						fwrite(&users[j], sizeof(struct user), 1, fptr);
 					}
 					fclose(fptr);
 					setcolor(12);
@@ -1253,23 +1663,23 @@ void pass(char p[])
 			while (n < 34)
 			{
 				gets(pass2);
-				n = strength_pass(pass2);
+				n = get_password_strength(pass2);
 				if (n > 33)
 				{
-					strcpy(presentuser.passwd, pass2);
-					presentuser.strength = n;
-					update();
+					strcpy(current_user.passwd, pass2);
+					current_user.strength = n;
+					update_usersinfo_file();
 					FILE *fptr = fopen("usersinfo.txt", "rb");
-					for (int i = 0; i < numberofusers + 1; i++)
+					for (int i = 0; i < number_of_users + 1; i++)
 					{
-						fread(&s[i], sizeof(struct user), 1, fptr);
-						if (strcmp(s[i].username, presentuser.username) == 0)
+						fread(&users[i], sizeof(struct user), 1, fptr);
+						if (strcmp(users[i].username, current_user.username) == 0)
 						{
 							fclose(fptr);
 							fptr = fopen("usersinfo.txt", "wb");
-							for (int j = 0; j < numberofusers + 1; j++)
+							for (int j = 0; j < number_of_users + 1; j++)
 							{
-								fwrite(&s[j], sizeof(struct user), 1, fptr);
+								fwrite(&users[j], sizeof(struct user), 1, fptr);
 							}
 							fclose(fptr);
 							setcolor(12);
@@ -1295,36 +1705,42 @@ void pass(char p[])
 	chdir(now);
 	return;
 }
+
 void pass2()
 {
 	char time4[20], time5[20], username[100], pass2[100];
+	int s2, n, i = 0;
+
 	scanf("%s", time4);
 	scanf("%s", time5);
 	scanf("%s", username);
+
 	strcat(time4, " ");
 	strcat(time4, time5);
 	setcolor(11);
+
 	printf("please enter your new password: ");
+
 	gets(pass2);
-	int s2, n, i = 0;
-	n = strength_pass(pass2);
+	n = get_password_strength(pass2);
+
 	if (n > 34)
 	{
 
 		FILE *fptr = fopen("usersinfo.txt", "rb");
-		for (int i = 0; i < numberofusers + 1; i++)
+		for (int i = 0; i < number_of_users + 1; i++)
 		{
-			fread(&s[i], sizeof(struct user), 1, fptr);
-			if (strcmp(s[i].username, username) == 0)
+			fread(&users[i], sizeof(struct user), 1, fptr);
+			if (strcmp(users[i].username, username) == 0)
 			{
-				s[i].strength = n;
-				strcpy(s[i].passwd, pass2);
-				strcpy(s[i].time, time4);
+				users[i].strength = n;
+				strcpy(users[i].passwd, pass2);
+				strcpy(users[i].time, time4);
 				fclose(fptr);
 				fptr = fopen("usersinfo.txt", "wb");
-				for (int j = 0; j < numberofusers + 1; j++)
+				for (int j = 0; j < number_of_users + 1; j++)
 				{
-					fwrite(&s[j], sizeof(struct user), 1, fptr);
+					fwrite(&users[j], sizeof(struct user), 1, fptr);
 				}
 				fclose(fptr);
 				setcolor(12);
@@ -1338,28 +1754,28 @@ void pass2()
 	}
 	else
 	{
-		// printf("the password is too weak enter another password: ");
+
 		while (n < 34)
 		{
 			gets(pass2);
-			n = strength_pass(pass2);
+			n = get_password_strength(pass2);
 			if (n > 33)
 			{
 
 				FILE *fptr = fopen("usersinfo.txt", "rb");
-				for (int i = 0; i < numberofusers + 1; i++)
+				for (int i = 0; i < number_of_users + 1; i++)
 				{
-					fread(&s[i], sizeof(struct user), 1, fptr);
-					if (strcmp(s[i].username, username) == 0)
+					fread(&users[i], sizeof(struct user), 1, fptr);
+					if (strcmp(users[i].username, username) == 0)
 					{
-						s[i].strength = n;
-						strcpy(s[i].passwd, pass2);
-						strcpy(s[i].time, time4);
+						users[i].strength = n;
+						strcpy(users[i].passwd, pass2);
+						strcpy(users[i].time, time4);
 						fclose(fptr);
 						fptr = fopen("usersinfo.txt", "wb");
-						for (int j = 0; j < numberofusers + 1; j++)
+						for (int j = 0; j < number_of_users + 1; j++)
 						{
-							fwrite(&s[j], sizeof(struct user), 1, fptr);
+							fwrite(&users[j], sizeof(struct user), 1, fptr);
 						}
 						fclose(fptr);
 						setcolor(12);
@@ -1378,14 +1794,15 @@ void pass2()
 	}
 }
 
-void exif(char name[])
+void exif_file_command(char name[])
 {
 	struct stat stats;
-	// stat() returns 0 on successful operation,
-	// otherwise returns -1 if unable to get file properties.
+	//* stat() returns 0 on successful operation,
+	//* otherwise returns -1 if unable to get file properties.
+
 	if (stat(name, &stats) == 0)
 	{
-		printFileProperties(stats);
+		print_file_properties(stats);
 	}
 	else
 	{
@@ -1395,16 +1812,19 @@ void exif(char name[])
 	}
 }
 
-void printFileProperties(struct stat stats)
+void print_file_properties(struct stat stats)
 {
 	setcolor(11);
 	struct tm dt;
+
 	// File permissions
 	printf("\nFile access: ");
 	if (stats.st_mode & R_OK)
 		printf("read ");
+
 	if (stats.st_mode & W_OK)
 		printf("write ");
+
 	if (stats.st_mode & X_OK)
 		printf("execute");
 
@@ -1422,30 +1842,33 @@ void printFileProperties(struct stat stats)
 	printf("\nModified on: %d-%d-%d %d:%d:%d", dt.tm_mday, dt.tm_mon + 1, dt.tm_year + 1 + 1900,
 		   dt.tm_hour + 1, dt.tm_min + 1, dt.tm_sec);
 }
-void hide(char name[])
+
+void hide_file_command(char file_name[])
 {
 	char buffer[100];
-	sprintf(buffer, "attrib +h %s", name);
+	sprintf(buffer, "attrib +h %s", file_name);
 	system(buffer);
-	//	rmdir()
 }
-void show(char name[])
+
+void show_file_command(char file_name[])
 {
 	char buffer[100];
-	sprintf(buffer, "attrib -h %s", name);
+	sprintf(buffer, "attrib -h %s", file_name);
 	system(buffer);
 }
-void search(char name[])
+
+void search_file(char file_name[])
 {
 	setcolor(11);
-	char buffer[100];
-	sprintf(buffer, "dir /s /b %s", name); // search file
-	system(buffer);
+	char file_address[100];
+	sprintf(file_address, "dir /s /b %s", file_name);
+	system(file_address);
 }
-void search2(char name[])
+
+void search_directory(char directory_name[])
 {
 	setcolor(11);
-	char buffer[100];
-	sprintf(buffer, "dir %s /AD /s", name); // search directory
-	system(buffer);
+	char directory_address[100];
+	sprintf(directory_address, "dir %s /AD /s", directory_name);
+	system(directory_address);
 }
