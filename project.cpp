@@ -15,6 +15,8 @@
 #include <stdbool.h>
 
 #define PROGRAM_DIRECTORY "C:/Users/Win 10/Desktop/root/hadis80/"
+#define MIN_PASSWORD_STRENGTH 34
+#define USERSINFO_FILE "usersinfo.txt"
 struct user
 {
 	char name[100];
@@ -26,6 +28,30 @@ struct user
 	char time[10];
 } users[1000], x, current_user;
 
+void execute_ls_command();
+void create_directory_command();
+void execute_chgr_command();
+void execute_create_command();
+void execute_su_command();
+void execute_diff_command();
+void execute_cd_command();
+void execute_cat_command();
+void execute_wc_command();
+void execute_rm_command();
+void execute_rm_dash_r_command();
+void execute_cp_command();
+void execute_mv_command();
+void execute_time_command();
+void execute_time_dash_a_command();
+void execute_passwd_command();
+void execute_passwd_dash_l_command();
+void execute_hide_command();
+void execute_hide_dash_r_command();
+void execute_exif_command();
+void execute_search_command();
+void execute_greater_equal_command(char[]);
+void execute_greater_command(char[]);
+void handle_incorrect_command();
 void diff_files_command(char[], char[]);
 void copy_file_command(char[], char[]);
 void move_file_command(char[], char[]);
@@ -33,28 +59,23 @@ void make_directory(char[]);
 
 int get_password_strength(char[]);
 void create_new_user_file(char[]);
-
 void word_count_command(char[]);
 void cat_file_command(char[]);
 void create_new_user_command(char[]);
 void show_file_command(char[]);
 void hide_file_command(char[]);
 void exif_file_command(char[]);
-void show_time_command();
 void create_directory_command();
-void show_accurate_time_command();
-void help_command();
+void execute_help_command();
 void execute_exit_command();
 void execute_ls_command();
 void execute_su_command();
-
+void help_command_summery();
 void redirection_greater_operand(char[], char[]);
 void redirection_greater_equal_operand(char[], char[]);
-
 void print_user_directory_details(struct user);
 void print_welcome_messages();
-int print_working_directory();
-
+int execute_pwd_command();
 void increse_user_access_level(char[]);
 void switch_user_command(char[]);
 void redirection_command_help();
@@ -63,15 +84,21 @@ bool is_password_valid(char[], char[]);
 bool is_username_valid(char[], char[]);
 bool is_strings_equal(char[], const char[]);
 
-void update_usersinfo_file();
-void read_usersinfo_file();
-void write_usersinfo_file();
+void print_enter_new_password();
+void print_weak_password_error();
+void print_successfully_update_password();
+void print_user_not_found_error();
+void print_incorrect_password_error();
 
-void print_level_of_access();
-void pass(char[]);
+bool update_new_user_password_file(char new_password[], int entered_password_strength);
+
+bool update_usersinfo_file();
+bool read_usersinfo_file();
+void write_usersinfo_file();
+void execute_level_command();
+void change_current_password(char[]);
 void pass2();
 void print_file_properties(struct stat);
-
 void search_file(char[]);
 void search_directory(char[]);
 void handle_user_enter();
@@ -80,6 +107,8 @@ int get_user_commands();
 void enter_user_successfully(char[]);
 void print_normal_user_directory_info(struct user, char[]);
 void print_admin_user_directory_info(struct user, char[]);
+int get_help_selected_choice();
+int handle_help_command_selection(int);
 
 /*
 //*The different color codes are
@@ -121,7 +150,7 @@ void boldred()
 	printf("\033[1;31m");
 }
 
-int level_of_access = 1, number_of_users = 0;
+int level_of_access = 1, NUMBER_OF_USERS = 0;
 
 int main()
 {
@@ -131,6 +160,20 @@ int main()
 	handle_user_commands();
 
 	return 0;
+}
+
+void print_welcome_messages()
+{
+	setcolor(2);
+	printf("\n\n\n\n\n\n\n\n\t\t\t\t\t**********************************\n");
+	printf("\t\t\t\t\t\t******************\n");
+	printf("\t\t\t\t\t\tWELCOME \n\t\t\t\t\t\tTO\n\t\t\t\t\t        MY TERMINAL:)   \n\t\t\t\t\t\tHOPE TO ENGOY\n");
+	printf("\t\t\t\t\t\t******************\n");
+	printf("\t\t\t\t\t**********************************\n\n\n\n");
+	printf("\t\t\tpress EXIT to close the terminal\n\t\t\tpress help to see a introduction of commands\n");
+	printf("\t\t\tpress the enter key");
+	getchar();
+	system("cls");
 }
 
 void handle_user_enter()
@@ -147,12 +190,12 @@ void handle_user_enter()
 	printf("\n\n\n\t\t\tPLEASE ENTER YOUR PASSWORD: ");
 	gets(password);
 
-	FILE *fptr = fopen("usersinfo.txt", "rb");
+	FILE *fptr = fopen(USERSINFO_FILE, "rb");
 
 	struct user selected_user;
 	fread(&selected_user, sizeof(struct user), 1, fptr);
 
-	users[number_of_users] = selected_user;
+	users[NUMBER_OF_USERS] = selected_user;
 	current_user = selected_user;
 
 	if (is_password_valid(password, selected_user.passwd) && is_username_valid(username, selected_user.username))
@@ -231,14 +274,14 @@ int get_user_commands()
 
 	else if (is_strings_equal(user_command, "EXIT"))
 	{
-		exit_command();
+		execute_exit_command();
 		return -1;
 	}
 
 	else if (is_strings_equal(user_command, "pwd"))
 	{
 
-		print_working_directory();
+		execute_pwd_command();
 	}
 
 	else if (is_strings_equal(user_command, "chgr"))
@@ -304,22 +347,22 @@ int get_user_commands()
 	*/
 	else if (is_strings_equal(user_command, "help"))
 	{
-		help_command();
+		execute_help_command();
 	}
 
 	else if (is_strings_equal(user_command, "time"))
 	{
-		show_time_command();
+		execute_time_command();
 	}
 
 	else if (is_strings_equal(user_command, "time-a"))
 	{
-		show_accurate_time_command();
+		execute_time_dash_a_command();
 	}
 
 	else if (is_strings_equal(user_command, "level"))
 	{
-		print_level_of_access();
+		execute_level_command();
 	}
 
 	else if (is_strings_equal(user_command, "passwd"))
@@ -359,11 +402,11 @@ int get_user_commands()
 
 		if (is_strings_equal(redirection_command, ">>"))
 		{
-			execute_greater_equal_command();
+			execute_greater_equal_command(user_command);
 		}
 		else if (is_strings_equal(redirection_command, ">"))
 		{
-			execute_greater_command();
+			execute_greater_command(user_command);
 		}
 		else
 		{
@@ -380,18 +423,18 @@ void handle_incorrect_command()
 	update_usersinfo_file();
 }
 
-void execute_greater_equal_command()
+void execute_greater_equal_command(char file_name1[])
 {
-	char file_name[100];
-	scanf("%s", file_name);
-	redirection_greater_equal_operand(user_command, file_name);
+	char file_name2[100];
+	scanf("%s", file_name2);
+	redirection_greater_equal_operand(file_name1, file_name2);
 }
 
-void execute_greater_command()
+void execute_greater_command(char file_name1[])
 {
-	char file_name[100];
-	scanf("%s", file_name);
-	redirection_greater_operand(user_command, file_name);
+	char file_name2[100];
+	scanf("%s", file_name2);
+	redirection_greater_operand(file_name1, file_name2);
 }
 
 void execute_search_command()
@@ -458,7 +501,7 @@ void execute_passwd_command()
 	printf("please enter your current password: ");
 	gets(entered_password);
 
-	pass(entered_password);
+	change_current_password(entered_password);
 }
 
 void execute_mv_command()
@@ -610,21 +653,7 @@ bool is_strings_equal(char str1[], const char str2[])
 	return strcmp(str1, str2) == 0;
 }
 
-void print_welcome_messages()
-{
-	setcolor(2);
-	printf("\n\n\n\n\n\n\n\n\t\t\t\t\t**********************************\n");
-	printf("\t\t\t\t\t\t******************\n");
-	printf("\t\t\t\t\t\tWELCOME \n\t\t\t\t\t\tTO\n\t\t\t\t\t        MY TERMINAL:)   \n\t\t\t\t\t\tHOPE TO ENGOY\n");
-	printf("\t\t\t\t\t\t******************\n");
-	printf("\t\t\t\t\t**********************************\n\n\n\n");
-	printf("\t\t\tpress EXIT to close the terminal\n\t\t\tpress help to see a introduction of commands\n");
-	printf("\t\t\tpress the enter key");
-	getchar();
-	system("cls");
-}
-
-int print_working_directory()
+int execute_pwd_command()
 {
 	char cwd[PATH_MAX];
 
@@ -672,20 +701,20 @@ void increse_user_access_level(char username[])
 	strcpy(now, cwd);
 	chdir(PROGRAM_DIRECTORY);
 
-	FILE *fptr = fopen("usersinfo.txt", "wb");
+	FILE *fptr = fopen(USERSINFO_FILE, "wb");
 
-	for (j = 0; j < number_of_users + 1; j++)
+	for (j = 0; j < NUMBER_OF_USERS + 1; j++)
 	{
 		fwrite(&users[j], sizeof(struct user), 1, fptr);
 	}
 
 	fclose(fptr);
 
-	fptr = fopen("usersinfo.txt", "rb");
+	fptr = fopen(USERSINFO_FILE, "rb");
 
 	if (level_of_access == 1) // current_user.access==1
 	{
-		for (i = 0; i < number_of_users + 1; i++)
+		for (i = 0; i < NUMBER_OF_USERS + 1; i++)
 		{
 			fread(&users[i], sizeof(struct user), 1, fptr);
 
@@ -698,8 +727,8 @@ void increse_user_access_level(char username[])
 					setcolor(11);
 					printf("user with %s  username became admin:)\n", users[i].username);
 					fclose(fptr);
-					fptr = fopen("usersinfo.txt", "wb");
-					for (i = 0; i < number_of_users + 1; i++)
+					fptr = fopen(USERSINFO_FILE, "wb");
+					for (i = 0; i < NUMBER_OF_USERS + 1; i++)
 					{
 						fwrite(&users[i], sizeof(struct user), 1, fptr);
 					}
@@ -710,7 +739,7 @@ void increse_user_access_level(char username[])
 			}
 		}
 
-		if (i == number_of_users + 1)
+		if (i == NUMBER_OF_USERS + 1)
 		{
 			setcolor(12);
 			printf("user %s cannot be admin:(\n", username);
@@ -758,22 +787,22 @@ void switch_user_command(char username[100])
 
 	setcolor(10);
 	strftime(time3, sizeof(time3), "%Y/%m/%d %H:%M:%S", ts); // time now
-	FILE *fptr = fopen("usersinfo.txt", "wb");
+	FILE *fptr = fopen(USERSINFO_FILE, "wb");
 
-	for (int j = 0; j < number_of_users + 1; j++)
+	for (int j = 0; j < NUMBER_OF_USERS + 1; j++)
 	{
 		fwrite(&users[j], sizeof(struct user), 1, fptr);
 	}
 
 	fclose(fptr);
 
-	fptr = fopen("usersinfo.txt", "rb");
+	fptr = fopen(USERSINFO_FILE, "rb");
 
 	int i;
 
 	if (level_of_access == 1)
 	{
-		for (i = 0; i < number_of_users + 1; i++)
+		for (i = 0; i < NUMBER_OF_USERS + 1; i++)
 		{
 			fread(&users[i], sizeof(struct user), 1, fptr);
 
@@ -793,7 +822,7 @@ void switch_user_command(char username[100])
 			}
 		}
 
-		if (i == number_of_users + 1)
+		if (i == NUMBER_OF_USERS + 1)
 		{
 			setcolor(12);
 			printf("permission denied:(\n");
@@ -818,7 +847,7 @@ void switch_user_command(char username[100])
 		printf("\nuser %s please enter your pass: ", username);
 		gets(pass);
 
-		for (i = 0; i < number_of_users + 1; i++)
+		for (i = 0; i < NUMBER_OF_USERS + 1; i++)
 		{
 			fread(&users[i], sizeof(struct user), 1, fptr);
 
@@ -837,7 +866,7 @@ void switch_user_command(char username[100])
 				break;
 			}
 		}
-		if (i == number_of_users + 1)
+		if (i == NUMBER_OF_USERS + 1)
 		{
 			setcolor(12);
 			printf("permission denied:(\n");
@@ -865,7 +894,7 @@ void create_new_user_command(char user_name[])
 	char cwd[PATH_MAX];
 	char current_working_directory_copy[1000];
 
-	number_of_users++;
+	NUMBER_OF_USERS++;
 
 	setcolor(11);
 	getcwd(cwd, sizeof(cwd));
@@ -885,19 +914,19 @@ void create_new_user_command(char user_name[])
 void create_new_user_file(char file_name[])
 {
 	setcolor(11);
-	FILE *file = fopen("usersinfo.txt", "ab+");
+	FILE *file = fopen(USERSINFO_FILE, "ab+");
 
 	printf("enter name: ");
-	scanf("%s", users[number_of_users].name);
+	scanf("%s", users[NUMBER_OF_USERS].name);
 
 	printf("enter username: ");
-	scanf("%s", users[number_of_users].username);
+	scanf("%s", users[NUMBER_OF_USERS].username);
 
 	printf("choose password: ");
-	gets(users[number_of_users].passwd);
+	gets(users[NUMBER_OF_USERS].passwd);
 
 	int s2, n, i = 0;
-	n = get_password_strength(users[number_of_users].passwd);
+	n = get_password_strength(users[NUMBER_OF_USERS].passwd);
 
 	if (n > 34)
 	{
@@ -909,8 +938,8 @@ void create_new_user_file(char file_name[])
 	{
 		while (n < 34)
 		{
-			gets(users[number_of_users].passwd);
-			n = get_password_strength(users[number_of_users].passwd);
+			gets(users[NUMBER_OF_USERS].passwd);
+			n = get_password_strength(users[NUMBER_OF_USERS].passwd);
 			if (n > 33)
 			{
 				setcolor(12);
@@ -927,13 +956,13 @@ void create_new_user_file(char file_name[])
 	setcolor(11);
 
 	printf("please enter the time : ");
-	gets(users[number_of_users].time);
+	gets(users[NUMBER_OF_USERS].time);
 
-	users[number_of_users].strength = s2;
-	users[number_of_users].access = 0;
-	users[number_of_users].mistakes = 0;
+	users[NUMBER_OF_USERS].strength = s2;
+	users[NUMBER_OF_USERS].access = 0;
+	users[NUMBER_OF_USERS].mistakes = 0;
 
-	fwrite(&users[number_of_users], sizeof(struct user), 1, file);
+	fwrite(&users[NUMBER_OF_USERS], sizeof(struct user), 1, file);
 
 	if (fwrite != 0)
 	{
@@ -1019,7 +1048,7 @@ void word_count_command(char file_name[])
 	fclose(fptr);
 	setcolor(11);
 
-	printf("the number of lines and words and characters in the %s file : %d  %d  %d", file_name, line_counter, words_counter, character_counter);
+	printf("in the %s file \nnumber of lines:%d \nnumber of words: %d \nnumber of characters : %d", file_name, line_counter, words_counter, character_counter);
 	return;
 }
 
@@ -1377,14 +1406,17 @@ void redirection_greater_equal_operand(char file_name1[], char file_name2[]) //>
 	return;
 }
 
-void help_command()
+void execute_help_command()
 {
 	do
 	{
 		help_command_summery();
 		int selected_command;
 		selected_command = get_help_selected_choice();
-		handle_help_command_selection(selected_command);
+		if (handle_help_command_selection(selected_command) == -1)
+		{
+			break;
+		}
 
 	} while (1);
 
@@ -1417,7 +1449,7 @@ int get_help_selected_choice()
 	return selected_command;
 }
 
-void handle_help_command_selection(int selected_command)
+int handle_help_command_selection(int selected_command)
 {
 	switch (selected_command)
 	{
@@ -1513,7 +1545,7 @@ void handle_help_command_selection(int selected_command)
 	case 21:
 		getchar();
 		system("cls");
-		return;
+		return -1;
 	default:
 		printf("error!!");
 		getch();
@@ -1541,36 +1573,43 @@ void redirection_command_help()
 	getch();
 }
 
-void update_usersinfo_file()
+bool update_usersinfo_file()
 {
-	read_usersinfo_file();
-	write_usersinfo_file();
+	if (read_usersinfo_file())
+	{
+		write_usersinfo_file();
+		return true;
+	}
+
+	return false;
 }
 
-void read_usersinfo_file()
+bool read_usersinfo_file()
 {
-	FILE *fptr = fopen("usersinfo.txt", "rb");
+	FILE *fptr = fopen(USERSINFO_FILE, "rb");
 	int i;
 
-	for (i = 0; i < number_of_users + 1; i++)
+	for (i = 0; i < NUMBER_OF_USERS + 1; i++)
 	{
 		fread(&users[i], sizeof(struct user), 1, fptr);
 
 		if (is_strings_equal(users[i].username, current_user.username))
 		{
-			break;
+			users[i] = current_user;
+			fclose(fptr);
+			return true;
 		}
 	}
 
-	users[i] = current_user;
 	fclose(fptr);
+	return false;
 }
 
 void write_usersinfo_file()
 {
-	FILE *fptr = fopen("usersinfo.txt", "wb");
+	FILE *fptr = fopen(USERSINFO_FILE, "wb");
 
-	for (int j = 0; j < number_of_users + 1; j++)
+	for (int j = 0; j < NUMBER_OF_USERS + 1; j++)
 	{
 		fwrite(&users[j], sizeof(struct user), 1, fptr);
 	}
@@ -1578,7 +1617,7 @@ void write_usersinfo_file()
 	fclose(fptr);
 }
 
-void show_time_command()
+void execute_time_command()
 {
 	time_t current_system_time;
 	struct tm *current_local_time;
@@ -1593,7 +1632,7 @@ void show_time_command()
 		   current_local_time->tm_sec);
 }
 
-void show_accurate_time_command()
+void execute_time_dash_a_command()
 {
 	char current_time_str[80];
 	struct tm *current_local_time;
@@ -1608,102 +1647,110 @@ void show_accurate_time_command()
 	printf("\n");
 }
 
-void print_level_of_access()
+void execute_level_command()
 {
 	printf("%d\n", level_of_access);
 }
 
-void pass(char p[])
+void change_current_password(char entered_password[])
 {
 	char cwd[PATH_MAX];
-	char now[1000];
-	char pass2[100];
+	char current_address[1000];
+	char new_password[100];
+	int entered_password_strength;
 
 	getcwd(cwd, sizeof(cwd));
-	strcpy(now, cwd);
-	// chdir();
+	strcpy(current_address, cwd);
 
-	if (strcmp(p, current_user.passwd) == 0)
+	if (!is_strings_equal(entered_password, current_user.passwd))
 	{
-		setcolor(11);
-		printf("please enter your new password: ");
-		gets(pass2);
+		print_incorrect_password_error();
+		return;
+	}
 
-		int s2, n, i = 0;
-		n = get_password_strength(pass2);
-		if (n > 34)
+	print_enter_new_password();
+
+	gets(new_password);
+	entered_password_strength = get_password_strength(new_password);
+
+	if (entered_password_strength >= MIN_PASSWORD_STRENGTH)
+	{
+		if (update_new_user_password_file(new_password, entered_password_strength))
 		{
-			strcpy(current_user.passwd, pass2);
-			current_user.strength = n;
-			update_usersinfo_file();
-			FILE *fptr = fopen("usersinfo.txt", "rb");
-			for (int i = 0; i < number_of_users + 1; i++)
-			{
-				fread(&users[i], sizeof(struct user), 1, fptr);
-				if (strcmp(users[i].username, current_user.username) == 0)
-				{
-					fclose(fptr);
-					fptr = fopen("usersinfo.txt", "wb");
-					for (int j = 0; j < number_of_users + 1; j++)
-					{
-						fwrite(&users[j], sizeof(struct user), 1, fptr);
-					}
-					fclose(fptr);
-					setcolor(12);
-					printf("your new password saved:)\n");
-					chdir(now);
-					return;
-				}
-			}
+			print_successfully_update_password();
+			chdir(current_address);
+			return;
 		}
-		else
-		{
-			setcolor(4);
-			printf("the password is too weak enter another password: ");
-			while (n < 34)
-			{
-				gets(pass2);
-				n = get_password_strength(pass2);
-				if (n > 33)
-				{
-					strcpy(current_user.passwd, pass2);
-					current_user.strength = n;
-					update_usersinfo_file();
-					FILE *fptr = fopen("usersinfo.txt", "rb");
-					for (int i = 0; i < number_of_users + 1; i++)
-					{
-						fread(&users[i], sizeof(struct user), 1, fptr);
-						if (strcmp(users[i].username, current_user.username) == 0)
-						{
-							fclose(fptr);
-							fptr = fopen("usersinfo.txt", "wb");
-							for (int j = 0; j < number_of_users + 1; j++)
-							{
-								fwrite(&users[j], sizeof(struct user), 1, fptr);
-							}
-							fclose(fptr);
-							setcolor(12);
-							printf("your new password saved:)\n");
-							chdir(now);
-							return;
-						}
-					}
-				}
-				setcolor(4);
-				printf("the password is too weak:(enter another password: ");
-				i++;
-			}
-		}
-		setcolor(12);
-		printf("user not found:(");
 	}
 	else
 	{
-		setcolor(12);
-		printf("incorrect password:(\n");
+		print_weak_password_error();
+
+		while (entered_password_strength < MIN_PASSWORD_STRENGTH)
+		{
+			gets(new_password);
+			entered_password_strength = get_password_strength(new_password);
+
+			if (entered_password_strength >= MIN_PASSWORD_STRENGTH)
+			{
+				if (update_new_user_password_file(new_password, entered_password_strength))
+				{
+					print_successfully_update_password();
+					chdir(current_address);
+					return;
+				}
+			}
+			print_weak_password_error();
+		}
 	}
-	chdir(now);
+
+	print_user_not_found_error();
+	chdir(current_address);
 	return;
+}
+
+void print_enter_new_password()
+{
+	setcolor(11);
+	printf("please enter your new password: ");
+}
+
+void print_weak_password_error()
+{
+	setcolor(4);
+	printf("the password is too weak:(enter another password: ");
+}
+
+void print_successfully_update_password()
+{
+	setcolor(12);
+	printf("your new password saved:)\n");
+}
+
+void print_user_not_found_error()
+{
+	setcolor(12);
+	printf("user not found:(");
+}
+
+void print_incorrect_password_error()
+{
+	setcolor(12);
+	printf("incorrect password:(\n");
+}
+
+bool update_new_user_password_file(char new_password[], int entered_password_strength)
+{
+
+	strcpy(current_user.passwd, new_password);
+	current_user.strength = entered_password_strength;
+
+	if (update_usersinfo_file())
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void pass2()
@@ -1727,8 +1774,8 @@ void pass2()
 	if (n > 34)
 	{
 
-		FILE *fptr = fopen("usersinfo.txt", "rb");
-		for (int i = 0; i < number_of_users + 1; i++)
+		FILE *fptr = fopen(USERSINFO_FILE, "rb");
+		for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
 		{
 			fread(&users[i], sizeof(struct user), 1, fptr);
 			if (strcmp(users[i].username, username) == 0)
@@ -1737,8 +1784,8 @@ void pass2()
 				strcpy(users[i].passwd, pass2);
 				strcpy(users[i].time, time4);
 				fclose(fptr);
-				fptr = fopen("usersinfo.txt", "wb");
-				for (int j = 0; j < number_of_users + 1; j++)
+				fptr = fopen(USERSINFO_FILE, "wb");
+				for (int j = 0; j < NUMBER_OF_USERS + 1; j++)
 				{
 					fwrite(&users[j], sizeof(struct user), 1, fptr);
 				}
@@ -1762,8 +1809,8 @@ void pass2()
 			if (n > 33)
 			{
 
-				FILE *fptr = fopen("usersinfo.txt", "rb");
-				for (int i = 0; i < number_of_users + 1; i++)
+				FILE *fptr = fopen(USERSINFO_FILE, "rb");
+				for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
 				{
 					fread(&users[i], sizeof(struct user), 1, fptr);
 					if (strcmp(users[i].username, username) == 0)
@@ -1772,8 +1819,8 @@ void pass2()
 						strcpy(users[i].passwd, pass2);
 						strcpy(users[i].time, time4);
 						fclose(fptr);
-						fptr = fopen("usersinfo.txt", "wb");
-						for (int j = 0; j < number_of_users + 1; j++)
+						fptr = fopen(USERSINFO_FILE, "wb");
+						for (int j = 0; j < NUMBER_OF_USERS + 1; j++)
 						{
 							fwrite(&users[j], sizeof(struct user), 1, fptr);
 						}
