@@ -10,13 +10,18 @@ void execute_ls_command()
 void execute_mkdir_command()
 {
     char directory_name[100];
-
+    // bool is_directory_created = false;
     getchar();
     gets(directory_name);
 
-    CreateDirectory(directory_name, NULL);
-    setcolor(2);
-    printf("Directory created successfully\n");
+    // is_directory_created = ;
+    if (!CreateDirectory(directory_name, NULL))
+    {
+        printf("error happend\n");
+        return;
+    }
+
+    print_directory_successfully_created();
 }
 
 void execute_chgr_command()
@@ -47,7 +52,7 @@ void increse_user_access_level(char username[])
 
     fptr = fopen(USERSINFO_FILE, "rb");
 
-    if (level_of_access == 1) // current_user.access==1
+    if (current_user.access == 1) // current_user.access==1
     {
         for (i = 0; i < NUMBER_OF_USERS + 1; i++)
         {
@@ -58,7 +63,7 @@ void increse_user_access_level(char username[])
                 if (users[i].access == 0 && users[i].mistakes < 11 && users[i].strength > 75)
                 {
                     users[i].access = 1;
-                    level_of_access = 1;
+                    // level_of_access = 1;
                     setcolor(11);
                     printf("user with %s  username became admin:)\n", users[i].username);
                     fclose(fptr);
@@ -101,14 +106,13 @@ void execute_create_command()
     user_name = (char *)malloc(sizeof(char));
     scanf("%s", user_name);
 
-    if (level_of_access == 1)
+    if (current_user.access == 1)
     {
         handle_create_new_user_command(user_name);
     }
     else
     {
-        boldred();
-        printf("permission denied\n");
+        print_permission_denied_error();
     }
 }
 
@@ -117,41 +121,40 @@ void handle_create_new_user_command(char user_name[])
     char cwd[PATH_MAX];
     char current_working_directory_copy[1000];
 
-    NUMBER_OF_USERS++;
-
     setcolor(11);
     getcwd(cwd, sizeof(cwd));
     strcpy(current_working_directory_copy, cwd);
 
     chdir(PROGRAM_DIRECTORY);
     chdir("..");
-    make_directory(user_name);
+    if (!make_directory(user_name))
+    {
+        chdir(current_working_directory_copy);
+        return;
+    }
 
     chdir(PROGRAM_DIRECTORY);
     handle_create_new_user_file(user_name);
+    NUMBER_OF_USERS++;
 
     chdir(current_working_directory_copy);
     printf("\n");
 }
 
-void make_directory(char directory_name[])
+bool make_directory(char directory_name[])
 {
-    int check;
-    check = mkdir(directory_name);
+    bool is_directory_not_created;
+    is_directory_not_created = mkdir(directory_name);
 
-    if (!check)
-        return;
+    if (!is_directory_not_created)
+        return true;
 
-    boldred();
-    printf("Unable to create directory:(\n");
-    exit(1);
+    print_directory_create_error();
+    return false;
 }
 
 void handle_create_new_user_file(char file_name[])
 {
-
-    FILE *file = fopen(USERSINFO_FILE, "ab+");
-
     print_enter_name();
     scanf("%s", users[NUMBER_OF_USERS].name);
 
@@ -191,10 +194,10 @@ void handle_create_new_user_file(char file_name[])
     users[NUMBER_OF_USERS].strength = entered_password_strength;
     users[NUMBER_OF_USERS].access = 0;
     users[NUMBER_OF_USERS].mistakes = 0;
+    bool is_user_added = false;
+    is_user_added = write_usersinfo_file();
 
-    fwrite(&users[NUMBER_OF_USERS], sizeof(struct user), 1, file);
-
-    if (fwrite != 0)
+    if (is_user_added)
     {
         print_successfully_save_new_user();
     }
@@ -202,8 +205,21 @@ void handle_create_new_user_file(char file_name[])
     {
         print_save_new_user_error();
     }
+}
 
-    fclose(file);
+int get_number_of_users()
+{
+    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    int counter = 0;
+    struct user temp_user;
+
+    while (fread(&temp_user, sizeof(struct user), 1, fptr))
+    {
+        counter++;
+    }
+
+    fclose(fptr);
+    return counter;
 }
 
 void execute_su_command()
@@ -214,123 +230,84 @@ void execute_su_command()
     switch_user_command(username);
 }
 
-void switch_user_command(char entered_username[100])
+void switch_user_command(char entered_username[])
 {
     char cwd[PATH_MAX];
     char origin_address[1000];
-    char formated_current_time[100], pass[100];
-
     getcwd(cwd, sizeof(cwd));
     strcpy(origin_address, cwd);
 
     chdir(PROGRAM_DIRECTORY);
 
-    time_t current_time;
-    struct tm *ts;
-
-    current_time = time(NULL);
-    ts = localtime(&current_time);
-
-    setcolor(10);
-    strftime(formated_current_time, sizeof(formated_current_time), "%Y/%m/%d %H:%M:%S", ts); // time now
-    FILE *fptr = fopen(USERSINFO_FILE, "wb");
-
-    for (int j = 0; j < NUMBER_OF_USERS + 1; j++)
+    if (current_user.access == 1)
     {
-        fwrite(&users[j], sizeof(struct user), 1, fptr);
-    }
-
-    fclose(fptr);
-
-    fptr = fopen(USERSINFO_FILE, "rb");
-
-    int i;
-
-    if (level_of_access == 1)
-    {
-        for (i = 0; i < NUMBER_OF_USERS + 1; i++)
+        if (!handle_switch_user(true, entered_username))
         {
-            fread(&users[i], sizeof(struct user), 1, fptr);
-
-            if (is_strings_equal(users[i].username, entered_username))
-            {
-                if (strcmp(users[i].time, formated_current_time) <= 0)
-                {
-                    print_timeout_user_session(entered_username);
-                    fclose(fptr);
-                    chdir(origin_address);
-                    return;
-                }
-                level_of_access = users[i].access;
-                current_user = users[i];
-                break;
-            }
-        }
-
-        if (i == NUMBER_OF_USERS + 1)
-        {
-            setcolor(12);
-            printf("permission denied:(\n");
-        }
-
-        else
-        {
-
-            char address[1000] = "C:/Users/Win 10/Desktop/root/";
-            strcat(address, entered_username);
-
-            setcolor(9);
-            printf("WELCOME %s USER:)", entered_username);
-            chdir(address);
-            getchar();
-            system("cls");
+            chdir(origin_address);
         }
     }
     else
     {
-        print_take_user_password(entered_username);
-        gets(pass);
-
-        for (i = 0; i < NUMBER_OF_USERS + 1; i++)
+        if (!handle_switch_user(false, entered_username))
         {
-            fread(&users[i], sizeof(struct user), 1, fptr);
-
-            if (is_strings_equal(users[i].username, entered_username) && is_strings_equal(users[i].passwd, pass))
-            {
-                if (strcmp(users[i].time, formated_current_time) <= 0)
-                {
-                    print_timeout_user_session(entered_username);
-                    fclose(fptr);
-                    chdir(origin_address);
-                    return;
-                }
-
-                level_of_access = users[i].access;
-                current_user = users[i];
-                break;
-            }
-        }
-
-        if (i == NUMBER_OF_USERS + 1)
-        {
-            print_permission_denied_error();
-            fclose(fptr);
             chdir(origin_address);
-            return;
-        }
-        else
-        {
-
-            char root_address[1000] = "C:/Users/Win 10/Desktop/root/";
-            strcat(root_address, entered_username);
-            chdir(root_address);
-            setcolor(9);
-            printf("WELCOME %s USER:)", entered_username);
-            getchar();
-            system("cls");
-            return;
         }
     }
+}
+
+bool handle_switch_user(bool is_admin, char entered_username[])
+{
+    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    bool user_found = false;
+    char entered_password[100];
+    struct user temp_user;
+
+    if (!is_admin)
+    {
+        print_take_user_password(entered_username);
+        gets(entered_password);
+    }
+
+    while (fread(&temp_user, sizeof(struct user), 1, fptr))
+    {
+        if (is_strings_equal(temp_user.username, entered_username) && (is_admin || (!is_admin && is_strings_equal(temp_user.passwd, entered_password))))
+        {
+            if (is_session_timeout(temp_user.time))
+            {
+                print_timeout_user_session(entered_username);
+                fclose(fptr);
+                return false;
+            }
+            current_user = temp_user;
+            user_found = true;
+            break;
+        }
+    }
+
+    if (!user_found)
+    {
+        print_permission_denied_error();
+        fclose(fptr);
+        return false;
+    }
+    else
+    {
+        switch_user_login_successfully(entered_username);
+        fclose(fptr);
+        return true;
+    }
+}
+
+void switch_user_login_successfully(char entered_username[])
+{
+    char new_user_directory_address[1000];
+    strcpy(new_user_directory_address, ROOT_DIRECTORY);
+    strcat(new_user_directory_address, entered_username);
+    print_welcome_user_login(entered_username);
+
+    chdir(new_user_directory_address);
+    getchar();
+    system("cls");
 }
 
 void execute_diff_command()
@@ -759,8 +736,10 @@ void execute_passwd_dash_l_command()
 {
     getchar();
 
-    if (level_of_access == 1)
+    if (current_user.access == 1)
+    {
         get_new_data_by_admin();
+    }
     else
     {
         print_permission_denied_error();
@@ -1118,7 +1097,7 @@ void execute_time_dash_a_command()
 
 void execute_level_command()
 {
-    printf("%d\n", level_of_access);
+    printf("%d\n", current_user.access);
 }
 
 int get_password_strength(char entered_password[])

@@ -17,8 +17,10 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #define PROGRAM_DIRECTORY "C:/Users/Win 10/Desktop/root/hadis80/"
+#define ROOT_DIRECTORY "C:/Users/Win 10/Desktop/root/"
 #define MIN_PASSWORD_STRENGTH 34
 #define USERSINFO_FILE "usersinfo.txt"
 
@@ -30,10 +32,11 @@ struct user
     int strength;
     int access;
     int mistakes;
-    char time[10];
+    char time[20];
 };
 
 extern user users[1000], current_user;
-extern int level_of_access, NUMBER_OF_USERS;
+extern int NUMBER_OF_USERS;
+extern int errno;
 
 #endif

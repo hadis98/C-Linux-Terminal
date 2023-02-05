@@ -1,5 +1,33 @@
 #include "print_messages.h"
 
+void print_welcome_messages()
+{
+    setcolor(2);
+    printf("\n\n\n\n\n\n\n\n\t\t\t\t\t**********************************\n");
+    printf("\t\t\t\t\t\t******************\n");
+    printf("\t\t\t\t\t\tWELCOME \n\t\t\t\t\t\tTO\n\t\t\t\t\t        MY TERMINAL:)   \n\t\t\t\t\t\tHOPE TO ENGOY\n");
+    printf("\t\t\t\t\t\t******************\n");
+    printf("\t\t\t\t\t**********************************\n\n\n\n");
+    printf("\t\t\tpress EXIT to close the terminal\n\t\t\tpress help to see a introduction of commands\n");
+    printf("\t\t\tpress the enter key");
+    getchar();
+    system("cls");
+}
+
+void print_enter_user_successfully(char username[])
+{
+    system("cls");
+    Cyan();
+    printf("\n\n\n\n\t\t\t\t\t\\WELCOME USER %s", username);
+    getchar();
+}
+
+void print_enter_retry()
+{
+    boldred();
+    printf("TRY AGAIN TO ENTER:)\n");
+}
+
 void print_enter_name()
 {
     setcolor(11);
@@ -8,14 +36,14 @@ void print_enter_name()
 
 void print_enter_username()
 {
-    setcolor(11);
+    Boldcyan();
     printf("enter username: ");
 }
 
 void print_enter_password()
 {
-    setcolor(11);
-    printf("choose password: ");
+    Boldcyan();
+    printf("enter password: ");
 }
 
 void print_take_user_password(char username[])
@@ -27,7 +55,7 @@ void print_take_user_password(char username[])
 void print_timeout_user_session(char username[])
 {
     setcolor(12);
-    printf("the time for user %s has finished:(\nso this cannot access to terminal any more:(\n", username);
+    printf("the time for user %s has finished:(\nso this user cannot access to terminal any more:(\n", username);
 }
 
 void print_enter_new_password()
@@ -50,7 +78,7 @@ void print_weak_password_error()
 
 void print_successfully_save_password()
 {
-    setcolor(12);
+    setcolor(2);
     printf("your password saved:)\n");
 }
 
@@ -78,6 +106,20 @@ void print_incorrect_password_error()
     printf("incorrect password:(\n");
 }
 
+void print_directory_successfully_created()
+{
+    setcolor(2);
+    printf("Directory created successfully\n");
+}
+
+void print_directory_create_error()
+{
+    boldred();
+    printf("Unable to create directory:( ");
+    printf(strerror(errno));
+    printf("\n");
+}
+
 void print_permission_denied_error()
 {
     boldred();
@@ -96,9 +138,18 @@ void print_save_new_user_error()
     printf("error saving data:(\n");
 }
 
+void print_welcome_user_login(char username[])
+{
+    setcolor(9);
+    printf("WELCOME %s USER:)", username);
+}
+
 void print_user_directory_details(struct user current_user)
 {
     char cwd[1024];
+
+    chdir(ROOT_DIRECTORY);
+    chdir(current_user.username);
     getcwd(cwd, sizeof(cwd));
 
     if (current_user.access == 0)

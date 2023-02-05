@@ -45,3 +45,22 @@ bool is_strings_equal(char str1[], const char str2[])
 {
     return strcmp(str1, str2) == 0;
 }
+
+bool is_session_timeout(char user_time[])
+{
+    char formated_current_time[100];
+    time_t current_time;
+    struct tm *ts;
+
+    current_time = time(NULL);
+    ts = localtime(&current_time);
+    struct user temp_user;
+    setcolor(10);
+    strftime(formated_current_time, sizeof(formated_current_time), "%Y/%m/%d %H:%M:%S", ts); // time now
+
+    if (strcmp(user_time, formated_current_time) <= 0)
+    {
+        return true;
+    }
+    return false;
+}

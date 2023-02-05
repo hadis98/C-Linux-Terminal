@@ -2,81 +2,100 @@
 
 void handle_user_enter()
 {
-    char username[100];
-    char password[100];
+    bool is_error_occured = false;
+
+    char entered_username[100];
+    char entered_password[100];
 
     system("cls");
-    Boldcyan();
-    printf("\n\n\n\t\t\tPLEASE ENTER YOUR USERNAME: ");
-    gets(username);
+    print_enter_username();
+    gets(entered_username);
 
-    Boldcyan();
-    printf("\n\n\n\t\t\tPLEASE ENTER YOUR PASSWORD: ");
-    gets(password);
+    print_enter_password();
+    gets(entered_password);
 
     FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    struct user temp_user;
 
-    struct user selected_user;
-    fread(&selected_user, sizeof(struct user), 1, fptr);
-
-    users[NUMBER_OF_USERS] = selected_user;
-    current_user = selected_user;
-
-    if (is_password_valid(password, selected_user.passwd) && is_username_valid(username, selected_user.username))
+    if (is_user_exist(entered_username, entered_password))
     {
-
-        enter_user_successfully(username);
+        temp_user = get_user_structure(entered_username, entered_password);
+        if (is_session_timeout(temp_user.time))
+        {
+            is_error_occured = true;
+            print_timeout_user_session(entered_username);
+        }
+        else
+        {
+            current_user = temp_user;
+            print_enter_user_successfully(entered_username);
+            fclose(fptr);
+        }
     }
     else
     {
-        boldred();
-        printf("PERMISSION DENIED:(\n");
+        is_error_occured = true;
+    }
+    //! is_user_exist(entered_username, entered_password) || is_session_timeout(temp_user.time)
+    if (is_error_occured)
+    {
+        print_permission_denied_error();
         do
-        { // try again to enter
-            boldred();
-            printf("\n\nTRY AGAIN TO ENTER:)\n");
+        {
+            print_enter_retry();
+            print_enter_username();
+            gets(entered_username);
 
-            Boldcyan();
-            printf("\n\n\n\t\t\tPLEASE ENTER YOUR USERNAME: ");
-            gets(username);
+            print_enter_password();
+            gets(entered_password);
 
-            Boldcyan();
-            printf("\n\n\n\t\t\tPLEASE ENTER YOUR PASSWORD: ");
-            gets(password);
+            if (is_user_exist(entered_username, entered_password))
+            {
+                temp_user = get_user_structure(entered_username, entered_password);
+                if (is_session_timeout(temp_user.time))
+                {
+                    print_timeout_user_session(entered_username);
+                }
+            }
 
-        } while (!is_password_valid(password, selected_user.passwd) || !is_username_valid(username, selected_user.username));
-        enter_user_successfully(username);
+        } while (!is_user_exist(entered_username, entered_password) || is_session_timeout(temp_user.time));
+
+        current_user = temp_user;
+        print_enter_user_successfully(entered_username);
+        fclose(fptr);
     }
 }
 
-void print_welcome_messages()
+bool is_user_exist(char entered_username[], char entered_password[])
 {
-    setcolor(2);
-    printf("\n\n\n\n\n\n\n\n\t\t\t\t\t**********************************\n");
-    printf("\t\t\t\t\t\t******************\n");
-    printf("\t\t\t\t\t\tWELCOME \n\t\t\t\t\t\tTO\n\t\t\t\t\t        MY TERMINAL:)   \n\t\t\t\t\t\tHOPE TO ENGOY\n");
-    printf("\t\t\t\t\t\t******************\n");
-    printf("\t\t\t\t\t**********************************\n\n\n\n");
-    printf("\t\t\tpress EXIT to close the terminal\n\t\t\tpress help to see a introduction of commands\n");
-    printf("\t\t\tpress the enter key");
-    getchar();
-    system("cls");
+    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    struct user temp_user;
+
+    while (fread(&temp_user, sizeof(struct user), 1, fptr))
+    {
+        if (is_strings_equal(temp_user.username, entered_username) && is_strings_equal(temp_user.passwd, entered_password))
+        {
+            return true;
+        }
+    }
+
+    fclose(fptr);
+    return false;
 }
 
-void enter_user_successfully(char username[])
+struct user get_user_structure(char entered_username[], char entered_password[])
 {
-    system("cls");
-    Cyan();
-    printf("\n\n\n\n\t\t\t\t\t\\WELCOME USER %s", username);
-    getchar();
-}
+    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    struct user temp_user;
 
-bool is_password_valid(char entered_password[], char valid_password[])
-{
-    return strcmp(entered_password, valid_password) == 0;
-}
+    while (fread(&temp_user, sizeof(struct user), 1, fptr))
+    {
 
-bool is_username_valid(char entered_username[], char valid_username[])
-{
-    return strcmp(entered_username, valid_username) == 0;
+        if (is_strings_equal(temp_user.username, entered_username) && is_strings_equal(temp_user.passwd, entered_password))
+        {
+            return temp_user;
+        }
+    }
+    
+    fclose(fptr);
 }

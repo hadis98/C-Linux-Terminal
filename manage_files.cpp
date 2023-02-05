@@ -32,16 +32,22 @@ bool read_usersinfo_file()
     return false;
 }
 
-void write_usersinfo_file()
+bool write_usersinfo_file()
 {
     FILE *fptr = fopen(USERSINFO_FILE, "wb");
 
-    for (int j = 0; j < NUMBER_OF_USERS + 1; j++)
+    for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
     {
-        fwrite(&users[j], sizeof(struct user), 1, fptr);
+        fwrite(&users[i], sizeof(struct user), 1, fptr);
     }
 
     fclose(fptr);
+    if (fwrite != 0)
+    {
+        return true;
+    }
+
+    return false;
 }
 
 bool update_new_user_password_file(char new_password[], int entered_password_strength)
@@ -89,4 +95,20 @@ bool update_password_file_by_admin(char username[], char new_password[], char en
     }
 
     return false;
+}
+
+void load_file_info()
+{
+    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+
+    int counter = 0;
+    struct user temp;
+
+    for (int i = 0; i < NUMBER_OF_USERS; i++)
+    {
+        fread(&users[i], sizeof(struct user), 1, fptr);
+        printf("user[%d]: username: %s password: %s\n", i, users[i].username, users[i].passwd);
+    }
+
+    fclose(fptr);
 }

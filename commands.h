@@ -7,6 +7,8 @@
 #include "command_line_help.h"
 #include "manage_files.h"
 
+int get_number_of_users();
+
 void execute_ls_command();
 
 void execute_mkdir_command();
@@ -19,11 +21,13 @@ void increse_user_access_level(char[]);
 
 void execute_create_command();
 void handle_create_new_user_command(char[]);
-void make_directory(char[]);
+bool make_directory(char[]);
 void handle_create_new_user_file(char[]);
 
 void execute_su_command();
 void switch_user_command(char[]);
+bool handle_switch_user(bool, char[]);
+void switch_user_login_successfully(char[]);
 
 void execute_diff_command();
 void handle_diff_files_command(char[], char[]);

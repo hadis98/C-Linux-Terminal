@@ -7,5 +7,6 @@ void Cyan();
 void Boldcyan();
 void boldred();
 bool is_strings_equal(char[], const char[]);
+bool is_session_timeout(char[]);
 
 #endif
