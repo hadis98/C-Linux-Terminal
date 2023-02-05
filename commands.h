@@ -70,8 +70,9 @@ void handle_exif_file_command(char[]);
 void print_file_properties(struct stat);
 
 void execute_search_command();
-void handle_search_file(char[]);
-void handle_search_directory(char[]);
+void handle_search_directory(char[], bool);
+// void handle_search_file(char[]);
+// void handle_search_directory(char[]);
 
 void execute_greater_command(char[]);
 void handle_redirection_greater_operand(char[], char[]);

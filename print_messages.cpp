@@ -8,8 +8,8 @@ void print_welcome_messages()
     printf("\t\t\t\t\t\tWELCOME \n\t\t\t\t\t\tTO\n\t\t\t\t\t        MY TERMINAL:)   \n\t\t\t\t\t\tHOPE TO ENGOY\n");
     printf("\t\t\t\t\t\t******************\n");
     printf("\t\t\t\t\t**********************************\n\n\n\n");
-    printf("\t\t\tpress EXIT to close the terminal\n\t\t\tpress help to see a introduction of commands\n");
-    printf("\t\t\tpress the enter key");
+    printf("\t\t\twrite exit to close the terminal\n\t\t\twrite help to see a introduction of commands\n");
+    printf("\t\t\tpress the enter key to begin=)");
     getchar();
     system("cls");
 }
@@ -124,6 +124,14 @@ void print_permission_denied_error()
 {
     boldred();
     printf("permission denied:(\n");
+}
+
+void print_search_failed_error()
+{
+    boldred();
+    printf("search failed:(\n");
+    printf(strerror(errno));
+    printf("\n");
 }
 
 void print_successfully_save_new_user()

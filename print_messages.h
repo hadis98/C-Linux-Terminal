@@ -26,9 +26,9 @@ void print_user_not_found_error();
 void print_incorrect_password_error();
 void print_permission_denied_error();
 void print_successfully_admin_update_password(char[]);
-
 void print_user_directory_details(struct user);
 void print_normal_user_directory_info(struct user, char[]);
 void print_admin_user_directory_info(struct user, char[]);
+void print_search_failed_error();
 
 #endif

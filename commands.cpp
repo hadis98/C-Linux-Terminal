@@ -886,6 +886,8 @@ void print_file_properties(struct stat stats)
 void execute_search_command()
 {
     char entered_name[100];
+    bool is_directory = false;
+
     getchar();
     gets(entered_name);
 
@@ -893,29 +895,27 @@ void execute_search_command()
 
     if (fptr == NULL)
     {
-        handle_search_directory(entered_name);
+        is_directory = true;
         fclose(fptr);
+    }
+
+    handle_search_directory(entered_name, is_directory);
+}
+
+void handle_search_directory(char tobe_searched_name[], bool is_directory)
+{
+    setcolor(11);
+    char tobe_searched_address[100];
+    if (is_directory)
+    {
+        sprintf(tobe_searched_address, "dir %s /ad /s", tobe_searched_name);
     }
     else
     {
-        handle_search_file(entered_name);
+        sprintf(tobe_searched_address, "dir %s /s /b", tobe_searched_name);
     }
-}
-
-void handle_search_directory(char directory_name[])
-{
-    setcolor(11);
-    char directory_address[100];
-    sprintf(directory_address, "dir %s /AD /s", directory_name);
-    system(directory_address);
-}
-
-void handle_search_file(char file_name[])
-{
-    setcolor(11);
-    char file_address[100];
-    sprintf(file_address, "dir /s /b %s", file_name);
-    system(file_address);
+    
+    system(tobe_searched_address);
 }
 
 void execute_greater_command(char file_name1[])
