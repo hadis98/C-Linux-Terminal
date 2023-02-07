@@ -46,6 +46,12 @@ void print_enter_password()
     printf("enter password: ");
 }
 
+void print_enter_current_password()
+{
+    setcolor(9);
+    printf("please enter your current password: ");
+}
+
 void print_take_user_password(char username[])
 {
     setcolor(11);
@@ -84,7 +90,7 @@ void print_successfully_save_password()
 
 void print_successfully_update_password()
 {
-    setcolor(12);
+    setcolor(2);
     printf("your new password saved:)\n");
 }
 
@@ -152,6 +158,59 @@ void print_welcome_user_login(char username[])
     printf("WELCOME %s USER:)", username);
 }
 
+void print_file_exist_error(char file_name[])
+{
+    setcolor(4);
+    printf("file %s doesnt exist:(\n", file_name);
+}
+
+void print_already_exist_warning(char file_name[])
+{
+    printf("the %s already exist\ndo you want to overwrite it:y/n ?\n", file_name);
+}
+
+void print_file_moved_successfully(char file_name[])
+{
+    setcolor(2);
+    printf("file %s moved successfully:)", file_name);
+}
+
+void print_new_admin(char username[])
+{
+    setcolor(11);
+    printf("user with %s  username became admin:)\n", username);
+}
+
+void print_admin_create_error(char username[])
+{
+    setcolor(12);
+    printf("user %s cannot be admin:(\n", username);
+}
+
+void print_wc_command_info(char file_name[], int num_lines, int num_words, int num_characters)
+{
+    setcolor(11);
+    printf("in the %s file \nnumber of lines:%d \nnumber of words: %d \nnumber of characters : %d", file_name, num_lines, num_words, num_characters);
+}
+
+void print_delete_file_successfully()
+{
+    setcolor(2);
+    printf("deleted successfully\n");
+}
+
+void print_rm_command_error(bool is_directory)
+{
+    boldred();
+    if (is_directory)
+    {
+        printf("directory cannot be deleted or doesnt exist\n");
+        return;
+    }
+
+    printf("file cannot be deleted or doesnt exist\n");
+}
+
 void print_user_directory_details(struct user current_user)
 {
     char cwd[1024];
@@ -168,6 +227,36 @@ void print_user_directory_details(struct user current_user)
     {
         print_admin_user_directory_info(current_user, cwd);
     }
+}
+
+void print_incorrect_command()
+{
+    boldred();
+    printf("incorrect command\n");
+}
+
+void print_endof_program()
+{
+    setcolor(5);
+    printf("END OF PROGRAM..\nGOOD BYE:)");
+}
+
+void print_keep_file_question(char file_name[])
+{
+    setcolor(11);
+    printf("keep file %s? y/n\n", file_name);
+}
+
+void print_exif_file_error(char file_name[])
+{
+    boldred();
+    printf("Unable to get file properties:(\nPlease check whether '%s' file exists.\n", file_name);
+}
+
+void print_file_copy_successfully()
+{
+    setcolor(2);
+    printf("file copied successfully:)");
 }
 
 void print_normal_user_directory_info(struct user current_user, char cwd[])

@@ -22,7 +22,7 @@
 #define PROGRAM_DIRECTORY "C:/Users/Win 10/Desktop/root/hadis80/"
 #define ROOT_DIRECTORY "C:/Users/Win 10/Desktop/root/"
 #define MIN_PASSWORD_STRENGTH 34
-#define USERSINFO_FILE "usersinfo.txt"
+#define USERSINFO_FILE "../usersinfo.txt"
 
 struct user
 {

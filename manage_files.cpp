@@ -42,6 +42,7 @@ bool write_usersinfo_file()
     }
 
     fclose(fptr);
+
     if (fwrite != 0)
     {
         return true;
@@ -107,7 +108,6 @@ void load_file_info()
     for (int i = 0; i < NUMBER_OF_USERS; i++)
     {
         fread(&users[i], sizeof(struct user), 1, fptr);
-        printf("user[%d]: username: %s password: %s\n", i, users[i].username, users[i].passwd);
     }
 
     fclose(fptr);

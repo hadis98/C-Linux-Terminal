@@ -30,5 +30,19 @@ void print_user_directory_details(struct user);
 void print_normal_user_directory_info(struct user, char[]);
 void print_admin_user_directory_info(struct user, char[]);
 void print_search_failed_error();
+void print_file_exist_error(char[]);
+void print_incorrect_command();
+void print_new_admin(char[]);
+void print_admin_create_error(char[]);
+void print_wc_command_info(char[], int, int, int);
+void print_delete_file_successfully();
+void print_rm_command_error(bool);
+void print_keep_file_question(char[]);
+void print_endof_program();
+void print_already_exist_warning(char[]);
+void print_file_moved_successfully(char[]);
+void print_enter_current_password();
+void print_exif_file_error(char[]);
+void print_file_copy_successfully();
 
 #endif

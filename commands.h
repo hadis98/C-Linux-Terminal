@@ -7,6 +7,7 @@
 #include "command_line_help.h"
 #include "manage_files.h"
 
+void copy_file_contents(FILE *fptr1, FILE *fptr2);
 int get_number_of_users();
 
 void execute_ls_command();
@@ -18,6 +19,7 @@ void execute_chgr_command();
 int execute_pwd_command();
 
 void increse_user_access_level(char[]);
+bool is_user_eligible_tobe_admin(struct user);
 
 void execute_create_command();
 void handle_create_new_user_command(char[]);

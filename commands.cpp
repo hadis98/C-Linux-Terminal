@@ -10,11 +10,10 @@ void execute_ls_command()
 void execute_mkdir_command()
 {
     char directory_name[100];
-    // bool is_directory_created = false;
+
     getchar();
     gets(directory_name);
 
-    // is_directory_created = ;
     if (!CreateDirectory(directory_name, NULL))
     {
         printf("error happend\n");
@@ -33,87 +32,64 @@ void execute_chgr_command()
 
 void increse_user_access_level(char username[])
 {
-    int i, j;
     char cwd[PATH_MAX];
-    char now[1000];
+    char current_address[1000];
+    bool is_user_found = false;
+
+    if (current_user.access != 1)
+    {
+        print_permission_denied_error();
+        return;
+    }
 
     getcwd(cwd, sizeof(cwd));
-    strcpy(now, cwd);
+    strcpy(current_address, cwd);
     chdir(PROGRAM_DIRECTORY);
+    
+    FILE *fptr = fopen(USERSINFO_FILE, "rb");
 
-    FILE *fptr = fopen(USERSINFO_FILE, "wb");
-
-    for (j = 0; j < NUMBER_OF_USERS + 1; j++)
+    for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
     {
-        fwrite(&users[j], sizeof(struct user), 1, fptr);
-    }
+        fread(&users[i], sizeof(struct user), 1, fptr);
 
-    fclose(fptr);
-
-    fptr = fopen(USERSINFO_FILE, "rb");
-
-    if (current_user.access == 1) // current_user.access==1
-    {
-        for (i = 0; i < NUMBER_OF_USERS + 1; i++)
+        if (is_strings_equal(users[i].username, username) && is_user_eligible_tobe_admin(users[i]))
         {
-            fread(&users[i], sizeof(struct user), 1, fptr);
-
-            if (strcmp(users[i].username, username) == 0)
-            {
-                if (users[i].access == 0 && users[i].mistakes < 11 && users[i].strength > 75)
-                {
-                    users[i].access = 1;
-                    // level_of_access = 1;
-                    setcolor(11);
-                    printf("user with %s  username became admin:)\n", users[i].username);
-                    fclose(fptr);
-                    fptr = fopen(USERSINFO_FILE, "wb");
-                    for (i = 0; i < NUMBER_OF_USERS + 1; i++)
-                    {
-                        fwrite(&users[i], sizeof(struct user), 1, fptr);
-                    }
-                    fclose(fptr);
-                    chdir(now);
-                    return;
-                }
-            }
-        }
-
-        if (i == NUMBER_OF_USERS + 1)
-        {
-            setcolor(12);
-            printf("user %s cannot be admin:(\n", username);
+            is_user_found = true;
+            users[i].access = 1;
+            print_new_admin(users[i].username);
             fclose(fptr);
-            chdir(now);
-            return;
+            write_usersinfo_file();
+            break;
         }
     }
-    else
-    {
-        setcolor(12);
-        printf("permission denied:(\n");
-    }
+
+    if (!is_user_found)
+        print_admin_create_error(username);
 
     fclose(fptr);
-    chdir(now);
+    chdir(current_address);
+}
 
-    return;
+bool is_user_eligible_tobe_admin(struct user selected_user)
+{
+    printf("in is_user_eligible_tobe_admin function:access = %d, mistakes = %d, strength  %d\n", selected_user.access, selected_user.mistakes, selected_user.strength);
+    return selected_user.access == 0 && selected_user.mistakes < 11 && selected_user.strength > 75;
 }
 
 void execute_create_command()
 {
     char *user_name;
+
     user_name = (char *)malloc(sizeof(char));
     scanf("%s", user_name);
 
     if (current_user.access == 1)
     {
         handle_create_new_user_command(user_name);
+        return;
     }
-    else
-    {
-        print_permission_denied_error();
-    }
+
+    print_permission_denied_error();
 }
 
 void handle_create_new_user_command(char user_name[])
@@ -168,9 +144,7 @@ void handle_create_new_user_file(char file_name[])
     entered_password_strength = get_password_strength(users[NUMBER_OF_USERS].passwd);
 
     if (entered_password_strength >= MIN_PASSWORD_STRENGTH)
-    {
         print_successfully_save_password();
-    }
     else
     {
         while (entered_password_strength < MIN_PASSWORD_STRENGTH)
@@ -194,17 +168,17 @@ void handle_create_new_user_file(char file_name[])
     users[NUMBER_OF_USERS].strength = entered_password_strength;
     users[NUMBER_OF_USERS].access = 0;
     users[NUMBER_OF_USERS].mistakes = 0;
+
     bool is_user_added = false;
     is_user_added = write_usersinfo_file();
 
     if (is_user_added)
     {
         print_successfully_save_new_user();
+        return;
     }
-    else
-    {
-        print_save_new_user_error();
-    }
+
+    print_save_new_user_error();
 }
 
 int get_number_of_users()
@@ -225,6 +199,7 @@ int get_number_of_users()
 void execute_su_command()
 {
     char username[100];
+
     scanf("%s", username);
     getchar();
     switch_user_command(username);
@@ -234,25 +209,21 @@ void switch_user_command(char entered_username[])
 {
     char cwd[PATH_MAX];
     char origin_address[1000];
+
     getcwd(cwd, sizeof(cwd));
     strcpy(origin_address, cwd);
 
     chdir(PROGRAM_DIRECTORY);
 
+    bool is_switch_occured = false;
+
     if (current_user.access == 1)
-    {
-        if (!handle_switch_user(true, entered_username))
-        {
-            chdir(origin_address);
-        }
-    }
+        is_switch_occured = handle_switch_user(true, entered_username);
     else
-    {
-        if (!handle_switch_user(false, entered_username))
-        {
-            chdir(origin_address);
-        }
-    }
+        is_switch_occured = !handle_switch_user(false, entered_username);
+
+    if (!is_switch_occured)
+        chdir(origin_address);
 }
 
 bool handle_switch_user(bool is_admin, char entered_username[])
@@ -284,18 +255,16 @@ bool handle_switch_user(bool is_admin, char entered_username[])
         }
     }
 
-    if (!user_found)
-    {
-        print_permission_denied_error();
-        fclose(fptr);
-        return false;
-    }
-    else
+    if (user_found)
     {
         switch_user_login_successfully(entered_username);
         fclose(fptr);
         return true;
     }
+
+    print_permission_denied_error();
+    fclose(fptr);
+    return false;
 }
 
 void switch_user_login_successfully(char entered_username[])
@@ -312,25 +281,25 @@ void switch_user_login_successfully(char entered_username[])
 
 void execute_diff_command()
 {
-    char file_name1[100];
-    char file_name2[100];
-    scanf("%s%s", file_name1, file_name2);
-    // handle_diff_files_command(file_name1, file_name2);
+    char file1_name[100];
+    char file2_name[100];
+    scanf("%s%s", file1_name, file2_name);
+    // handle_diff_files_command(file1_name, file2_name);
 
     char diff_command[100] = "fc ";
-    strcat(diff_command, file_name1);
+    strcat(diff_command, file1_name);
     strcat(diff_command, " ");
-    strcat(diff_command, file_name2);
+    strcat(diff_command, file2_name);
     system(diff_command);
 
     printf("\n");
 }
 
-void handle_diff_files_command(char file_name1[], char file_name2[])
+void handle_diff_files_command(char file1_name[], char file2_name[])
 {
-    printf("\nname1: %s name2: %s\n", file_name1, file_name2);
-    FILE *fp1 = fopen(file_name1, "rb");
-    FILE *fp2 = fopen(file_name2, "rb");
+    printf("\nname1: %s name2: %s\n", file1_name, file2_name);
+    FILE *fp1 = fopen(file1_name, "rb");
+    FILE *fp2 = fopen(file2_name, "rb");
 
     if (fp1 == NULL || fp2 == NULL)
     {
@@ -367,11 +336,15 @@ void handle_diff_files_command(char file_name1[], char file_name2[])
     return;
 }
 
+//! error
+// todo
 void execute_cd_command()
 {
     char directory_address[1000];
+
     getchar();
     gets(directory_address);
+    printf("in cd command: %s", directory_address);
     chdir(directory_address);
     printf("\n");
 }
@@ -392,7 +365,7 @@ void handle_cat_file_command(char file_name[])
 
     if (fptr == NULL)
     {
-        printf("file does not exist:(");
+        print_file_exist_error(file_name);
         return;
     }
 
@@ -422,8 +395,7 @@ void handle_word_count_command(char file_name[])
 
     if (fptr == NULL)
     {
-        setcolor(12);
-        printf("file does not exist:(");
+        print_file_exist_error(file_name);
         return;
     }
 
@@ -447,28 +419,23 @@ void handle_word_count_command(char file_name[])
     }
 
     fclose(fptr);
-    setcolor(11);
 
-    printf("in the %s file \nnumber of lines:%d \nnumber of words: %d \nnumber of characters : %d", file_name, line_counter, words_counter, character_counter);
+    print_wc_command_info(file_name, line_counter, words_counter, character_counter);
     return;
 }
 
 void execute_rm_command()
 {
-
     char file_name[100];
     scanf("%s", file_name);
 
     if (remove(file_name) == 0)
     {
-        setcolor(12);
-        printf("deleted successfully\n");
+        print_delete_file_successfully();
+        return;
     }
-    else
-    {
-        boldred();
-        printf("file cannot be deleted or doesnt exist\n");
-    }
+
+    print_rm_command_error(false);
 }
 
 void execute_rm_dash_r_command()
@@ -479,197 +446,132 @@ void execute_rm_dash_r_command()
 
     if (rmdir(directory_name) == 0)
     {
-        setcolor(12);
-        printf("deleted successfully\n");
+        print_delete_file_successfully();
+        return;
     }
-    else
-    {
-        boldred();
-        printf("directory cannot be deleted or doesnt exist\n");
-    }
+
+    print_rm_command_error(true);
 }
 
 void execute_cp_command()
 {
-    char file_name1[100];
-    char file_name2[100];
+    char file1_name[100];
+    char file2_name[100];
 
-    scanf("%s%s", file_name1, file_name2);
-    handle_copy_file_command(file_name1, file_name2);
+    scanf("%s%s", file1_name, file2_name);
+    handle_copy_file_command(file1_name, file2_name);
     printf("\n");
 }
 
-void handle_copy_file_command(char name[], char name2[])
+void handle_copy_file_command(char file1_name[], char file2_name[])
 {
-    setcolor(11);
-    FILE *fptr1 = fopen(name, "rb");
-    FILE *fptr2 = fopen(name2, "rb");
+    FILE *fptr1 = fopen(file1_name, "rb");
+    FILE *fptr2 = fopen(file2_name, "rb");
+
     if (fptr1 == NULL)
     {
-        printf("file %s doesnt exist:(", name);
+        print_file_exist_error(file1_name);
         return;
     }
-    if (fptr2 != NULL)
-    {
-        printf("the %s already exist\ndo you want to overwrite it:y/n ?\n", name2);
-        int c;
-        c = getch();
-        if (c == 'y')
-        {
-            fclose(fptr2);
-            fptr2 = fopen(name2, "wb"); // overwrite
-            char ch;
-            ch = fgetc(fptr1);
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
-            printf("file copied successfully:)");
-            fclose(fptr1);
-            fclose(fptr2);
-            return;
-        }
-        else
-        {
-            fclose(fptr2);
-            fptr2 = fopen(name2, "ab+"); // append
-            char ch;
-            ch = fgetc(fptr1);
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
 
-            printf("file copied successfully:)");
-            fclose(fptr1);
-            fclose(fptr2);
-            return;
-        }
+    if (fptr2 == NULL)
+    {
+        fclose(fptr2);
+        fptr2 = fopen(file2_name, "wb");
     }
     else
     {
         fclose(fptr2);
-        fptr2 = fopen(name2, "wb");
-        char ch;
-        ch = fgetc(fptr1);
-        while (!feof(fptr1))
+        print_already_exist_warning(file2_name);
+
+        int is_file_overwritten;
+        is_file_overwritten = getch();
+
+        while (is_file_overwritten != 'y' && is_file_overwritten != 'n')
         {
-            fputc(ch, fptr2);
-            ch = fgetc(fptr1);
+            print_already_exist_warning(file2_name);
+            is_file_overwritten = getch();
         }
-        printf("file copied successfully:)");
-        fclose(fptr1);
-        fclose(fptr2);
-        return;
+
+        if (is_file_overwritten == 'y')
+        {
+            fptr2 = fopen(file2_name, "wb"); // overwrite
+        }
+        else
+        {
+            fptr2 = fopen(file2_name, "ab+"); // append
+        }
     }
+
+    copy_file_contents(fptr1, fptr2);
+
+    print_file_copy_successfully();
+    return;
 }
 
 void execute_mv_command()
 {
-    char file_name1[100];
-    char file_name2[100];
+    char file1_name[100];
+    char file2_name[100];
 
-    scanf("%s%s", file_name1, file_name2);
-    handle_move_file_command(file_name1, file_name2);
+    scanf("%s%s", file1_name, file2_name);
+    handle_move_file_command(file1_name, file2_name);
     printf("\n");
 }
 
-void handle_move_file_command(char file_name1[], char file_name2[])
+void handle_move_file_command(char file1_name[], char file2_name[])
 {
-    setcolor(11);
-    FILE *fptr1 = fopen(file_name1, "rb");
-    FILE *fptr2 = fopen(file_name2, "rb");
+    FILE *fptr1 = fopen(file1_name, "rb");
+    FILE *fptr2 = fopen(file2_name, "rb");
 
     if (fptr1 == NULL)
     {
-        printf("file %s doesnt exist:(", file_name1);
+        print_file_exist_error(file1_name);
         return;
     }
 
-    if (fptr2 != NULL)
+    if (fptr2 == NULL)
     {
-        printf("the %s already exist\ndo you want to overwrite it:y/n ?\n", file_name2);
-        int is_file_overwritten;
-        is_file_overwritten = getch();
-        if (is_file_overwritten == 'y')
-        {
-            fclose(fptr2);
-            fptr2 = fopen(file_name2, "wb"); // overwrite
-            char ch;
-            ch = fgetc(fptr1);
-
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
-
-            fclose(fptr1);
-
-            if (remove(file_name1) == 0)
-                printf("file moved successfully:)\n");
-            else
-                printf("cannot move:(\n");
-            fclose(fptr2);
-            return;
-        }
-        else
-        {
-            fclose(fptr2);
-            fptr2 = fopen(file_name2, "ab+"); // append
-            char ch;
-            ch = fgetc(fptr1);
-
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
-
-            fclose(fptr1);
-
-            if (remove(file_name1) == 0)
-                printf("file moved successfully:)\n");
-            else
-                printf("cannot move:(\n");
-            fclose(fptr2);
-            return;
-        }
+        fclose(fptr2);
+        fptr2 = fopen(file2_name, "wb");
     }
     else
     {
         fclose(fptr2);
-        fptr2 = fopen(file_name2, "wb");
+        print_already_exist_warning(file2_name);
 
-        char ch;
-        ch = fgetc(fptr1);
-
-        while (!feof(fptr1))
+        int is_file_overwritten;
+        is_file_overwritten = getch();
+        while (is_file_overwritten != 'y' && is_file_overwritten != 'n')
         {
-            fputc(ch, fptr2);
-            ch = fgetc(fptr1);
+            print_already_exist_warning(file2_name);
+            is_file_overwritten = getch();
         }
 
-        fclose(fptr1);
-
-        if (remove(file_name1) == 0)
-            printf("file moved successfully:)\n");
+        if (is_file_overwritten == 'y')
+        {
+            fptr2 = fopen(file2_name, "wb"); // overwrite
+        }
         else
-            printf("cannot move:(\n");
-
-        fclose(fptr2);
-        return;
+        {
+            fptr2 = fopen(file2_name, "ab+"); // append
+        }
     }
+
+    copy_file_contents(fptr1, fptr2);
+
+    if (remove(file1_name) == 0)
+        print_file_moved_successfully(file1_name);
+    else
+        printf("cannot move file:(\n");
 }
 
 void execute_passwd_command()
 {
     char entered_password[100];
+
     getchar();
-    setcolor(9);
-    printf("please enter your current password: ");
+    print_enter_current_password();
     gets(entered_password);
 
     handle_change_current_password(entered_password);
@@ -700,6 +602,11 @@ void handle_change_current_password(char entered_password[])
     {
         if (update_new_user_password_file(new_password, entered_password_strength))
         {
+            // for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
+            // {
+            //     printf("user[%d]: username: %s password: %s strngth: %s\n", i, users[i].username, users[i].passwd, users[i].strength);
+            // }
+
             print_successfully_update_password();
             chdir(current_address);
             return;
@@ -739,11 +646,10 @@ void execute_passwd_dash_l_command()
     if (current_user.access == 1)
     {
         get_new_data_by_admin();
+        return;
     }
-    else
-    {
-        print_permission_denied_error();
-    }
+
+    print_permission_denied_error();
 }
 
 void get_new_data_by_admin()
@@ -775,23 +681,21 @@ void handle_passwd_dash_l_command(char username[], char new_password[], char ful
             print_user_not_found_error();
         return;
     }
-    else
+
+    while (password_strength < MIN_PASSWORD_STRENGTH)
     {
-        while (password_strength < MIN_PASSWORD_STRENGTH)
+        gets(new_password);
+        password_strength = get_password_strength(new_password);
+
+        if (password_strength >= MIN_PASSWORD_STRENGTH)
         {
-            gets(new_password);
-            password_strength = get_password_strength(new_password);
+            is_updated_successfully = update_password_file_by_admin(username, new_password, full_time, password_strength);
 
-            if (password_strength >= MIN_PASSWORD_STRENGTH)
-            {
-                is_updated_successfully = update_password_file_by_admin(username, new_password, full_time, password_strength);
-
-                if (!is_updated_successfully)
-                    print_user_not_found_error();
-                return;
-            }
-            print_weak_password_error();
+            if (!is_updated_successfully)
+                print_user_not_found_error();
+            return;
         }
+        print_weak_password_error();
     }
 }
 
@@ -805,51 +709,54 @@ void execute_hide_command()
 
 void handle_hide_file_command(char file_name[])
 {
-    char buffer[100];
-    sprintf(buffer, "attrib +h %s", file_name);
-    system(buffer);
+    char command[100];
+
+    sprintf(command, "attrib +h %s", file_name);
+    system(command);
 }
 
 void execute_hide_dash_r_command()
 {
-    getchar();
     char file_name[100];
+
+    getchar();
     gets(file_name);
+
     handle_show_file_command(file_name);
 }
 
 void handle_show_file_command(char file_name[])
 {
-    char buffer[100];
-    sprintf(buffer, "attrib -h %s", file_name);
-    system(buffer);
+    char command[100];
+
+    sprintf(command, "attrib -h %s", file_name);
+    system(command);
 }
 
 void execute_exif_command()
 {
-    getchar();
     char file_name[100];
+
+    getchar();
     gets(file_name);
+
     handle_exif_file_command(file_name);
     printf("\n");
 }
 
-void handle_exif_file_command(char name[])
+void handle_exif_file_command(char file_name[])
 {
     struct stat stats;
     //* stat() returns 0 on successful operation,
     //* otherwise returns -1 if unable to get file properties.
 
-    if (stat(name, &stats) == 0)
+    if (stat(file_name, &stats) == 0)
     {
         print_file_properties(stats);
+        return;
     }
-    else
-    {
-        boldred();
-        printf("Unable to get file properties:(\n");
-        printf("Please check whether '%s' file exists.\n", name);
-    }
+
+    print_exif_file_error(file_name);
 }
 
 void print_file_properties(struct stat stats)
@@ -906,6 +813,7 @@ void handle_search_directory(char tobe_searched_name[], bool is_directory)
 {
     setcolor(11);
     char tobe_searched_address[100];
+
     if (is_directory)
     {
         sprintf(tobe_searched_address, "dir %s /ad /s", tobe_searched_name);
@@ -914,128 +822,114 @@ void handle_search_directory(char tobe_searched_name[], bool is_directory)
     {
         sprintf(tobe_searched_address, "dir %s /s /b", tobe_searched_name);
     }
-    
+
     system(tobe_searched_address);
 }
 
-void execute_greater_command(char file_name1[])
+void execute_greater_command(char file1_name[])
 {
-    char file_name2[100];
-    scanf("%s", file_name2);
-    handle_redirection_greater_operand(file_name1, file_name2);
+    char file2_name[100];
+    scanf("%s", file2_name);
+    handle_redirection_greater_operand(file1_name, file2_name);
 }
 
-void handle_redirection_greater_operand(char file_name1[], char file_name2[]) //>
+void handle_redirection_greater_operand(char file1_name[], char file2_name[]) //>
 {
     setcolor(11);
-    FILE *fptr1 = fopen(file_name1, "rb");
-    FILE *fptr2 = fopen(file_name2, "wb");
+    FILE *fptr1 = fopen(file1_name, "rb");
+    FILE *fptr2 = fopen(file2_name, "wb");
 
     if (fptr1 == NULL)
     {
-
-        fprintf(fptr2, "%s", file_name1);
+        fprintf(fptr2, "%s", file1_name);
         fclose(fptr2);
         return;
     }
-    else
-    {
-        printf("keep file %s? y/n\n", file_name1);
-        int is_file_kept = getch();
-        if (is_file_kept == 'y')
-        {
 
-            char ch;
-            ch = fgetc(fptr1);
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
-
-            fclose(fptr1);
-            fclose(fptr2);
-        }
-        else
-        {
-            char ch;
-            ch = fgetc(fptr1);
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
-
-            fclose(fptr1);
-            fclose(fptr2);
-            remove(file_name1);
-        }
-    }
-    return;
-}
-
-void execute_greater_equal_command(char file_name1[])
-{
-    char file_name2[100];
-    scanf("%s", file_name2);
-    handle_redirection_greater_equal_operand(file_name1, file_name2);
-}
-
-void handle_redirection_greater_equal_operand(char file_name1[], char file_name2[]) //>>
-{
-    setcolor(11);
-    FILE *fptr1 = fopen(file_name1, "rb");
-    FILE *fptr2 = fopen(file_name2, "ab+");
-
-    if (fptr1 == NULL)
-    {
-        fprintf(fptr2, "%s", file_name1);
-        fclose(fptr2);
-        return;
-    }
     if (fptr2 == NULL)
     {
-        printf("doesnt exist:(");
+        print_file_exist_error(file2_name);
         return;
     }
-    else
-    {
-        printf("keep file %s? y/n\n", file_name1);
-        int is_file_kept = getch();
 
-        if (is_file_kept == 'y')
-        {
-            char ch;
-            ch = fgetc(fptr1);
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
-            fclose(fptr1);
-            fclose(fptr2);
-        }
-        else
-        {
-            char ch;
-            ch = fgetc(fptr1);
-            while (!feof(fptr1))
-            {
-                fputc(ch, fptr2);
-                ch = fgetc(fptr1);
-            }
-            fclose(fptr1);
-            fclose(fptr2);
-            remove(file_name1);
-        }
+    print_keep_file_question(file1_name);
+    int is_file_kept = getch();
+
+    while (is_file_kept != 'y' && is_file_kept != 'n')
+    {
+        print_keep_file_question(file1_name);
+        is_file_kept = getch();
     }
-    return;
+
+    copy_file_contents(fptr1, fptr2);
+
+    if (is_file_kept == 'n')
+    {
+        remove(file1_name);
+    }
+}
+
+void copy_file_contents(FILE *fptr1, FILE *fptr2)
+{
+    char ch;
+    ch = fgetc(fptr1);
+
+    while (!feof(fptr1))
+    {
+        fputc(ch, fptr2);
+        ch = fgetc(fptr1);
+    }
+
+    fclose(fptr1);
+    fclose(fptr2);
+}
+
+void execute_greater_equal_command(char file1_name[])
+{
+    char file2_name[100];
+    scanf("%s", file2_name);
+    handle_redirection_greater_equal_operand(file1_name, file2_name);
+}
+
+void handle_redirection_greater_equal_operand(char file1_name[], char file2_name[]) //>>
+{
+
+    FILE *fptr1 = fopen(file1_name, "rb");
+    FILE *fptr2 = fopen(file2_name, "ab+");
+    char ch;
+
+    if (fptr1 == NULL)
+    {
+        fprintf(fptr2, "%s", file1_name);
+        fclose(fptr2);
+        return;
+    }
+
+    if (fptr2 == NULL)
+    {
+        print_file_exist_error(file2_name);
+        return;
+    }
+
+    print_keep_file_question(file1_name);
+    int is_file_kept = getch();
+
+    while (is_file_kept != 'y' && is_file_kept != 'n')
+    {
+        print_keep_file_question(file1_name);
+        is_file_kept = getch();
+    }
+
+    copy_file_contents(fptr1, fptr2);
+
+    if (is_file_kept == 'n')
+    {
+        remove(file1_name);
+    }
 }
 
 void handle_incorrect_command()
 {
-    boldred();
-    printf("incorrect command\n");
     current_user.mistakes++;
     update_usersinfo_file();
 }
@@ -1061,8 +955,7 @@ void execute_exit_command()
 {
     getchar();
     system("cls");
-    setcolor(5);
-    printf("END OF PROGRAM..\nGOOD BYE:)");
+    print_endof_program();
 }
 
 void execute_time_command()
