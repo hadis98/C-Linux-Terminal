@@ -24,7 +24,7 @@ bool is_user_eligible_tobe_admin(struct user);
 void execute_create_command();
 void handle_create_new_user_command(char[]);
 bool make_directory(char[]);
-void handle_create_new_user_file(char[]);
+bool handle_create_new_user_file(char[]);
 
 void execute_su_command();
 void switch_user_command(char[]);
@@ -73,8 +73,6 @@ void print_file_properties(struct stat);
 
 void execute_search_command();
 void handle_search_directory(char[], bool);
-// void handle_search_file(char[]);
-// void handle_search_directory(char[]);
 
 void execute_greater_command(char[]);
 void handle_redirection_greater_operand(char[], char[]);

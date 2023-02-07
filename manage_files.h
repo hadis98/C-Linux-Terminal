@@ -12,5 +12,6 @@ bool write_usersinfo_file();
 bool update_new_user_password_file(char[], int);
 bool update_password_file_by_admin(char[], char[], char[], int);
 void load_file_info();
+void print_users_info();
 
 #endif

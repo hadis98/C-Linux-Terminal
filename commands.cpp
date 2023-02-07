@@ -44,8 +44,8 @@ void increse_user_access_level(char username[])
 
     getcwd(cwd, sizeof(cwd));
     strcpy(current_address, cwd);
-    chdir(PROGRAM_DIRECTORY);
-    
+    // chdir(PROGRAM_DIRECTORY);
+
     FILE *fptr = fopen(USERSINFO_FILE, "rb");
 
     for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
@@ -72,7 +72,6 @@ void increse_user_access_level(char username[])
 
 bool is_user_eligible_tobe_admin(struct user selected_user)
 {
-    printf("in is_user_eligible_tobe_admin function:access = %d, mistakes = %d, strength  %d\n", selected_user.access, selected_user.mistakes, selected_user.strength);
     return selected_user.access == 0 && selected_user.mistakes < 11 && selected_user.strength > 75;
 }
 
@@ -101,17 +100,17 @@ void handle_create_new_user_command(char user_name[])
     getcwd(cwd, sizeof(cwd));
     strcpy(current_working_directory_copy, cwd);
 
-    chdir(PROGRAM_DIRECTORY);
-    chdir("..");
+    chdir(ROOT_DIRECTORY);
+
     if (!make_directory(user_name))
     {
         chdir(current_working_directory_copy);
         return;
     }
 
-    chdir(PROGRAM_DIRECTORY);
-    handle_create_new_user_file(user_name);
-    NUMBER_OF_USERS++;
+    // chdir(PROGRAM_DIRECTORY);
+    if (handle_create_new_user_file(user_name))
+        NUMBER_OF_USERS++;
 
     chdir(current_working_directory_copy);
     printf("\n");
@@ -129,7 +128,7 @@ bool make_directory(char directory_name[])
     return false;
 }
 
-void handle_create_new_user_file(char file_name[])
+bool handle_create_new_user_file(char file_name[])
 {
     print_enter_name();
     scanf("%s", users[NUMBER_OF_USERS].name);
@@ -143,24 +142,14 @@ void handle_create_new_user_file(char file_name[])
     int entered_password_strength;
     entered_password_strength = get_password_strength(users[NUMBER_OF_USERS].passwd);
 
-    if (entered_password_strength >= MIN_PASSWORD_STRENGTH)
-        print_successfully_save_password();
-    else
+    while (entered_password_strength < MIN_PASSWORD_STRENGTH)
     {
-        while (entered_password_strength < MIN_PASSWORD_STRENGTH)
-        {
-            gets(users[NUMBER_OF_USERS].passwd);
-            entered_password_strength = get_password_strength(users[NUMBER_OF_USERS].passwd);
-
-            if (entered_password_strength >= MIN_PASSWORD_STRENGTH)
-            {
-                print_successfully_save_password();
-                break;
-            }
-
-            print_weak_password_error();
-        }
+        print_weak_password_error();
+        gets(users[NUMBER_OF_USERS].passwd);
+        entered_password_strength = get_password_strength(users[NUMBER_OF_USERS].passwd);
     }
+
+    print_successfully_save_password();
 
     print_enter_time();
     gets(users[NUMBER_OF_USERS].time);
@@ -175,10 +164,11 @@ void handle_create_new_user_file(char file_name[])
     if (is_user_added)
     {
         print_successfully_save_new_user();
-        return;
+        return true;
     }
 
     print_save_new_user_error();
+    return false;
 }
 
 int get_number_of_users()
@@ -213,7 +203,7 @@ void switch_user_command(char entered_username[])
     getcwd(cwd, sizeof(cwd));
     strcpy(origin_address, cwd);
 
-    chdir(PROGRAM_DIRECTORY);
+    // chdir(PROGRAM_DIRECTORY);
 
     bool is_switch_occured = false;
 
@@ -598,40 +588,18 @@ void handle_change_current_password(char entered_password[])
     gets(new_password);
     entered_password_strength = get_password_strength(new_password);
 
-    if (entered_password_strength >= MIN_PASSWORD_STRENGTH)
-    {
-        if (update_new_user_password_file(new_password, entered_password_strength))
-        {
-            // for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
-            // {
-            //     printf("user[%d]: username: %s password: %s strngth: %s\n", i, users[i].username, users[i].passwd, users[i].strength);
-            // }
-
-            print_successfully_update_password();
-            chdir(current_address);
-            return;
-        }
-    }
-    else
+    while (entered_password_strength < MIN_PASSWORD_STRENGTH)
     {
         print_weak_password_error();
+        gets(new_password);
+        entered_password_strength = get_password_strength(new_password);
+    }
 
-        while (entered_password_strength < MIN_PASSWORD_STRENGTH)
-        {
-            gets(new_password);
-            entered_password_strength = get_password_strength(new_password);
-
-            if (entered_password_strength >= MIN_PASSWORD_STRENGTH)
-            {
-                if (update_new_user_password_file(new_password, entered_password_strength))
-                {
-                    print_successfully_update_password();
-                    chdir(current_address);
-                    return;
-                }
-            }
-            print_weak_password_error();
-        }
+    if (update_new_user_password_file(new_password, entered_password_strength))
+    {
+        print_successfully_update_password();
+        chdir(current_address);
+        return;
     }
 
     print_user_not_found_error();
@@ -673,30 +641,17 @@ void handle_passwd_dash_l_command(char username[], char new_password[], char ful
     password_strength = get_password_strength(new_password);
     bool is_updated_successfully = false;
 
-    if (password_strength >= MIN_PASSWORD_STRENGTH)
-    {
-        is_updated_successfully = update_password_file_by_admin(username, new_password, full_time, password_strength);
-
-        if (!is_updated_successfully)
-            print_user_not_found_error();
-        return;
-    }
-
     while (password_strength < MIN_PASSWORD_STRENGTH)
     {
+        print_weak_password_error();
         gets(new_password);
         password_strength = get_password_strength(new_password);
-
-        if (password_strength >= MIN_PASSWORD_STRENGTH)
-        {
-            is_updated_successfully = update_password_file_by_admin(username, new_password, full_time, password_strength);
-
-            if (!is_updated_successfully)
-                print_user_not_found_error();
-            return;
-        }
-        print_weak_password_error();
     }
+
+    is_updated_successfully = update_password_file_by_admin(username, new_password, full_time, password_strength);
+
+    if (!is_updated_successfully)
+        print_user_not_found_error();
 }
 
 void execute_hide_command()
@@ -931,6 +886,7 @@ void handle_redirection_greater_equal_operand(char file1_name[], char file2_name
 void handle_incorrect_command()
 {
     current_user.mistakes++;
+    print_incorrect_command();
     update_usersinfo_file();
 }
 
@@ -983,7 +939,11 @@ void execute_time_dash_a_command()
     current_local_time = localtime(&current_system_time);
 
     setcolor(2);
-    strftime(current_time_str, sizeof(current_time_str), "%B %A %Y-%m-%d %H:%M:%S %p %Z", current_local_time);
+    strftime(current_time_str,
+             sizeof(current_time_str),
+             "%B %A %Y-%m-%d %H:%M:%S %p %Z",
+             current_local_time);
+             
     puts(current_time_str);
     printf("\n");
 }

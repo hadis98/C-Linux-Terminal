@@ -96,7 +96,7 @@ void print_successfully_update_password()
 
 void print_successfully_admin_update_password(char username[])
 {
-    setcolor(12);
+    setcolor(2);
     printf("the new password of user %s saved:)\n", username);
 }
 

@@ -112,3 +112,13 @@ void load_file_info()
 
     fclose(fptr);
 }
+
+void print_users_info()
+{
+    printf("number of users: %d\n", NUMBER_OF_USERS);
+
+    for (int i = 0; i < NUMBER_OF_USERS; i++)
+    {
+        printf("username: %s , password: %s , strength: %d, mistakes:%d, access: %d , time: %s\n", users[i].username, users[i].passwd, users[i].strength, users[i].mistakes, users[i].access, users[i].time);
+    }
+}

@@ -100,7 +100,7 @@ int handle_help_command_selection(int selected_command)
         break;
     case 13:
         printf("command passwd : it will change the password of the current user and"
-               " if the current user is admin then with command (passwd -l time username) admin can change the password of a user and set a time for user.");
+               " if the current user is admin then with command (passwd-l time username) admin can change the password of a user and set a time for user.");
         getch();
         break;
     case 14:
