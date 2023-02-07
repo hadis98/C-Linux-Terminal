@@ -44,9 +44,7 @@ bool write_usersinfo_file()
     fclose(fptr);
 
     if (fwrite != 0)
-    {
         return true;
-    }
 
     return false;
 }
@@ -58,9 +56,7 @@ bool update_new_user_password_file(char new_password[], int entered_password_str
     current_user.strength = entered_password_strength;
 
     if (update_usersinfo_file())
-    {
         return true;
-    }
 
     return false;
 }
@@ -81,17 +77,11 @@ bool update_password_file_by_admin(char username[], char new_password[], char en
             strcpy(users[i].time, entered_time);
             fclose(fptr);
 
-            fptr = fopen(USERSINFO_FILE, "wb");
-
-            for (int j = 0; j < NUMBER_OF_USERS + 1; j++)
+            if (write_usersinfo_file())
             {
-                fwrite(&users[j], sizeof(struct user), 1, fptr);
+                print_successfully_admin_update_password(username);
+                return true;
             }
-
-            fclose(fptr);
-
-            print_successfully_admin_update_password(username);
-            return true;
         }
     }
 

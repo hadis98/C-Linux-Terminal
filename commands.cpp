@@ -101,9 +101,12 @@ void handle_create_new_user_command(char user_name[])
     strcpy(current_working_directory_copy, cwd);
 
     chdir(ROOT_DIRECTORY);
+    getcwd(cwd, sizeof(cwd));
+    printf("cwd = %s\n", cwd);
 
     if (!make_directory(user_name))
     {
+        printf("is it working?\n %s", current_working_directory_copy);
         chdir(current_working_directory_copy);
         return;
     }
@@ -118,14 +121,40 @@ void handle_create_new_user_command(char user_name[])
 
 bool make_directory(char directory_name[])
 {
-    bool is_directory_not_created;
-    is_directory_not_created = mkdir(directory_name);
+    char cwd[PATH_MAX];
+    // bool is_directory_not_created;
 
-    if (!is_directory_not_created)
+    getcwd(cwd, sizeof(cwd));
+    printf("cwd = %s\n", cwd);
+
+    // DIR *dir = opendir(directory_name);
+    // if (dir)
+    // {
+    //     /* Directory exists. */
+    //     closedir(dir);
+    //     print_directory_create_error();
+    //     return false;
+    // }
+    // else if (ENOENT == errno)
+    // {
+
+    // }
+
+    // folder = "C:\\Users\\SaMaN\\Desktop\\Ppln";
+    // folder = "/tmp";
+    struct stat sb;
+
+    if (stat(directory_name, &sb) == 0 && S_ISDIR(sb.st_mode))
+    {
+        printf("already exist!!!\n");
+        print_directory_create_error();
+        return false;
+    }
+    else
+    {
+        CreateDirectory(directory_name, NULL);
         return true;
-
-    print_directory_create_error();
-    return false;
+    }
 }
 
 bool handle_create_new_user_file(char file_name[])
@@ -136,6 +165,7 @@ bool handle_create_new_user_file(char file_name[])
     print_enter_username();
     scanf("%s", users[NUMBER_OF_USERS].username);
 
+    getchar();
     print_enter_password();
     gets(users[NUMBER_OF_USERS].passwd);
 
@@ -202,8 +232,6 @@ void switch_user_command(char entered_username[])
 
     getcwd(cwd, sizeof(cwd));
     strcpy(origin_address, cwd);
-
-    // chdir(PROGRAM_DIRECTORY);
 
     bool is_switch_occured = false;
 
@@ -273,21 +301,15 @@ void execute_diff_command()
 {
     char file1_name[100];
     char file2_name[100];
+
     scanf("%s%s", file1_name, file2_name);
-    // handle_diff_files_command(file1_name, file2_name);
-
-    char diff_command[100] = "fc ";
-    strcat(diff_command, file1_name);
-    strcat(diff_command, " ");
-    strcat(diff_command, file2_name);
-    system(diff_command);
-
-    printf("\n");
+    handle_diff_files_command(file1_name, file2_name);
 }
 
 void handle_diff_files_command(char file1_name[], char file2_name[])
 {
-    printf("\nname1: %s name2: %s\n", file1_name, file2_name);
+    char ch1, ch2;
+
     FILE *fp1 = fopen(file1_name, "rb");
     FILE *fp2 = fopen(file2_name, "rb");
 
@@ -297,30 +319,35 @@ void handle_diff_files_command(char file1_name[], char file2_name[])
         return;
     }
 
-    char ch1 = getc(fp1);
-    char ch2 = getc(fp2);
+    int difference_number = 0, difference_position = 0, difference_line = 1;
 
-    int error = 0, pos = 0, line = 1;
+    char diff_command[100] = "fc ";
+    strcat(diff_command, file1_name);
+    strcat(diff_command, " ");
+    strcat(diff_command, file2_name);
+    system(diff_command);
 
-    while (ch1 != EOF && ch2 != EOF)
+    do
     {
-        pos++;
+        ch1 = getc(fp1);
+        ch2 = getc(fp2);
+
+        difference_position++;
         if (ch1 == '\n' && ch2 == '\n')
         {
-            line++;
-            pos = 0;
+            difference_line++;
+            difference_position = 0;
         }
 
         if (ch1 != ch2)
         {
-            error++;
-            printf("Line Number : %d \tError Position : %d \n", line, pos);
+            difference_number++;
+            printf("Line Number : %d \tError Position : %d \n", difference_line, difference_position);
         }
-        ch1 = getc(fp1);
-        ch2 = getc(fp2);
-    }
 
-    printf("Total Errors : %d\t", error);
+    } while (ch1 != EOF || ch2 != EOF);
+
+    printf("Total Errors : %d\t\n", difference_number);
     fclose(fp1);
     fclose(fp2);
     return;
@@ -395,15 +422,10 @@ void handle_word_count_command(char file_name[])
     while ((file_character = fgetc(fptr)) != EOF)
     {
         if (file_character == '\n')
-        {
             line_counter++;
-        }
 
         if (file_character == ' ' || file_character == '\n')
-        {
-
             words_counter++;
-        }
 
         character_counter++;
     }
@@ -736,13 +758,15 @@ void print_file_properties(struct stat stats)
     // Get file creation time in seconds and
     // convert seconds to date and time format
     dt = *(gmtime(&stats.st_ctime));
-    printf("\nCreated on: %d-%d-%d %d:%d:%d", dt.tm_mday, dt.tm_mon + 1, dt.tm_year + 1900,
+    printf("\nCreated on: %d/%d/%d %d:%d:%d",
+           dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday + 1,
            dt.tm_hour + 1, dt.tm_min + 1, dt.tm_sec + 1);
 
     // File modification time
     dt = *(gmtime(&stats.st_mtime));
-    printf("\nModified on: %d-%d-%d %d:%d:%d", dt.tm_mday, dt.tm_mon + 1, dt.tm_year + 1 + 1900,
-           dt.tm_hour + 1, dt.tm_min + 1, dt.tm_sec);
+    printf("\nModified on: %d/%d/%d %d:%d:%d",
+           dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday + 1,
+           dt.tm_hour + 1, dt.tm_min + 1, dt.tm_sec + 1);
 }
 
 void execute_search_command()
@@ -943,7 +967,7 @@ void execute_time_dash_a_command()
              sizeof(current_time_str),
              "%B %A %Y-%m-%d %H:%M:%S %p %Z",
              current_local_time);
-             
+
     puts(current_time_str);
     printf("\n");
 }

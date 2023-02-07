@@ -177,7 +177,7 @@ void print_file_moved_successfully(char file_name[])
 
 void print_new_admin(char username[])
 {
-    setcolor(11);
+    setcolor(2);
     printf("user with %s  username became admin:)\n", username);
 }
 

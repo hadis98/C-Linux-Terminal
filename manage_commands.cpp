@@ -148,7 +148,6 @@ int get_user_commands()
         else
         {
             handle_incorrect_command();
-            print_users_info();
         }
     }
 }

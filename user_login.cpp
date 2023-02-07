@@ -36,7 +36,7 @@ void handle_user_enter()
     {
         is_error_occured = true;
     }
-    //! is_user_exist(entered_username, entered_password) || is_session_timeout(temp_user.time)
+    
     if (is_error_occured)
     {
         print_permission_denied_error();
@@ -96,6 +96,6 @@ struct user get_user_structure(char entered_username[], char entered_password[])
             return temp_user;
         }
     }
-    
+
     fclose(fptr);
 }

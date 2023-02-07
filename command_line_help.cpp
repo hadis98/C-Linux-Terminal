@@ -2,19 +2,17 @@
 
 void execute_help_command()
 {
+    int selected_command;
+
     do
     {
         help_command_summery();
-        int selected_command;
         selected_command = get_help_selected_choice();
+
         if (handle_help_command_selection(selected_command) == -1)
-        {
             break;
-        }
 
     } while (1);
-
-    return;
 }
 
 void help_command_summery()
@@ -22,7 +20,7 @@ void help_command_summery()
     system("cls");
     setcolor(6);
     printf("\n\t\t\t\t*********   HELP   *********");
-    printf("\n\n\t\t\tMENU-----:\n ");
+    printf("\n\n\t\tMENU-----:\n ");
     printf("\t\there are commands and a short introduction\n");
     printf("\t\tenter one of below numbers\n");
     setcolor(14);
@@ -35,9 +33,11 @@ void help_command_summery()
 
 int get_help_selected_choice()
 {
-    setcolor(14);
     int selected_command;
+
+    setcolor(14);
     printf("\t\tenter your choice :");
+    
     scanf("%d", &selected_command);
     printf("\n");
     return selected_command;
