@@ -19,16 +19,16 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#define PROGRAM_DIRECTORY "C:/Users/Win 10/Desktop/root/hadis80/"
+// #define PROGRAM_DIRECTORY "C:/Users/Win 10/Desktop/root/hadis80/"
 #define ROOT_DIRECTORY "C:/Users/Win 10/Desktop/root/"
 #define MIN_PASSWORD_STRENGTH 34
-#define USERSINFO_FILE "../usersinfo.txt"
+#define USERSINFO_FILE "C:/Users/Win 10/Desktop/root/usersinfo.txt"
 
 struct user
 {
-    char name[100];
-    char username[100];
-    char passwd[100];
+    char name[30];
+    char username[30];
+    char passwd[40];
     int strength;
     int access;
     int mistakes;
