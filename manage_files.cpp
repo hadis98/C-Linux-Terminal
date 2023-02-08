@@ -16,7 +16,7 @@ bool read_usersinfo_file()
     FILE *fptr = fopen(USERSINFO_FILE, "rb");
     int i;
 
-    for (i = 0; i < NUMBER_OF_USERS + 1; i++)
+    for (i = 0; i < NUMBER_OF_USERS; i++)
     {
         fread(&users[i], sizeof(struct user), 1, fptr);
 
@@ -36,7 +36,7 @@ bool write_usersinfo_file()
 {
     FILE *fptr = fopen(USERSINFO_FILE, "wb");
 
-    for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
+    for (int i = 0; i < NUMBER_OF_USERS; i++)
     {
         fwrite(&users[i], sizeof(struct user), 1, fptr);
     }
@@ -66,7 +66,7 @@ bool update_password_file_by_admin(char username[], char new_password[], char en
 
     FILE *fptr = fopen(USERSINFO_FILE, "rb");
 
-    for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
+    for (int i = 0; i < NUMBER_OF_USERS; i++)
     {
         fread(&users[i], sizeof(struct user), 1, fptr);
 

@@ -48,7 +48,7 @@ void increse_user_access_level(char username[])
 
     FILE *fptr = fopen(USERSINFO_FILE, "rb");
 
-    for (int i = 0; i < NUMBER_OF_USERS + 1; i++)
+    for (int i = 0; i < NUMBER_OF_USERS; i++)
     {
         fread(&users[i], sizeof(struct user), 1, fptr);
 
@@ -102,18 +102,15 @@ void handle_create_new_user_command(char user_name[])
 
     chdir(ROOT_DIRECTORY);
     getcwd(cwd, sizeof(cwd));
-    printf("cwd = %s\n", cwd);
 
     if (!make_directory(user_name))
     {
-        printf("is it working?\n %s", current_working_directory_copy);
         chdir(current_working_directory_copy);
         return;
     }
 
-    // chdir(PROGRAM_DIRECTORY);
-    if (handle_create_new_user_file(user_name))
-        NUMBER_OF_USERS++;
+    if (!handle_create_new_user_file(user_name))
+        NUMBER_OF_USERS--;
 
     chdir(current_working_directory_copy);
     printf("\n");
@@ -121,32 +118,11 @@ void handle_create_new_user_command(char user_name[])
 
 bool make_directory(char directory_name[])
 {
-    char cwd[PATH_MAX];
-    // bool is_directory_not_created;
-
-    getcwd(cwd, sizeof(cwd));
-    printf("cwd = %s\n", cwd);
-
-    // DIR *dir = opendir(directory_name);
-    // if (dir)
-    // {
-    //     /* Directory exists. */
-    //     closedir(dir);
-    //     print_directory_create_error();
-    //     return false;
-    // }
-    // else if (ENOENT == errno)
-    // {
-
-    // }
-
-    // folder = "C:\\Users\\SaMaN\\Desktop\\Ppln";
-    // folder = "/tmp";
     struct stat sb;
 
     if (stat(directory_name, &sb) == 0 && S_ISDIR(sb.st_mode))
     {
-        printf("already exist!!!\n");
+        printf("directory already exist!!!\n");
         print_directory_create_error();
         return false;
     }
@@ -158,7 +134,7 @@ bool make_directory(char directory_name[])
 }
 
 bool handle_create_new_user_file(char file_name[])
-{
+{    
     print_enter_name();
     scanf("%s", users[NUMBER_OF_USERS].name);
 
@@ -189,6 +165,7 @@ bool handle_create_new_user_file(char file_name[])
     users[NUMBER_OF_USERS].mistakes = 0;
 
     bool is_user_added = false;
+    NUMBER_OF_USERS++;
     is_user_added = write_usersinfo_file();
 
     if (is_user_added)
@@ -257,17 +234,35 @@ bool handle_switch_user(bool is_admin, char entered_username[])
         gets(entered_password);
     }
 
-    while (fread(&temp_user, sizeof(struct user), 1, fptr))
+    // while (fread(&temp_user, sizeof(struct user), 1, fptr))
+    // {
+    //     if (is_strings_equal(temp_user.username, entered_username) && (is_admin || (!is_admin && is_strings_equal(temp_user.passwd, entered_password))))
+    //     {
+    //         if (is_session_timeout(temp_user.time))
+    //         {
+    //             print_timeout_user_session(entered_username);
+    //             fclose(fptr);
+    //             return false;
+    //         }
+    //         current_user = temp_user;
+    //         user_found = true;
+    //         break;
+    //     }
+    // }
+
+    for (int i = 0; i < NUMBER_OF_USERS; i++)
     {
-        if (is_strings_equal(temp_user.username, entered_username) && (is_admin || (!is_admin && is_strings_equal(temp_user.passwd, entered_password))))
+        fread(&users[i], sizeof(struct user), 1, fptr);
+
+        if (is_strings_equal(users[i].username, entered_username) && (is_admin || (!is_admin && is_strings_equal(users[i].passwd, entered_password))))
         {
-            if (is_session_timeout(temp_user.time))
+            if (is_session_timeout(users[i].time))
             {
                 print_timeout_user_session(entered_username);
                 fclose(fptr);
                 return false;
             }
-            current_user = temp_user;
+            current_user = users[i];
             user_found = true;
             break;
         }
@@ -342,12 +337,12 @@ void handle_diff_files_command(char file1_name[], char file2_name[])
         if (ch1 != ch2)
         {
             difference_number++;
-            printf("Line Number : %d \tError Position : %d \n", difference_line, difference_position);
+            printf("Line Number : %d \tError Position : %d \tCharacter of first file: %c\tCharacter of second file: %c\n", difference_line, difference_position, ch1, ch2);
         }
 
     } while (ch1 != EOF || ch2 != EOF);
 
-    printf("Total Errors : %d\t\n", difference_number);
+    printf("Total number of differences: %d\t\n", difference_number);
     fclose(fp1);
     fclose(fp2);
     return;
@@ -361,7 +356,6 @@ void execute_cd_command()
 
     getchar();
     gets(directory_address);
-    printf("in cd command: %s", directory_address);
     chdir(directory_address);
     printf("\n");
 }
@@ -377,7 +371,7 @@ void execute_cat_command()
 
 void handle_cat_file_command(char file_name[])
 {
-    setcolor(11);
+
     FILE *fptr = fopen(file_name, "rb");
 
     if (fptr == NULL)
@@ -388,10 +382,9 @@ void handle_cat_file_command(char file_name[])
 
     char file_character;
 
+    setcolor(15);
     while ((file_character = fgetc(fptr)) != EOF)
-    {
         printf("%c", file_character);
-    }
 
     fclose(fptr);
     return;
@@ -506,13 +499,9 @@ void handle_copy_file_command(char file1_name[], char file2_name[])
         }
 
         if (is_file_overwritten == 'y')
-        {
-            fptr2 = fopen(file2_name, "wb"); // overwrite
-        }
+            fptr2 = fopen(file2_name, "wb"); // overwrite , write binary mode
         else
-        {
-            fptr2 = fopen(file2_name, "ab+"); // append
-        }
+            fptr2 = fopen(file2_name, "ab+"); // append , append binary mode
     }
 
     copy_file_contents(fptr1, fptr2);
@@ -561,13 +550,9 @@ void handle_move_file_command(char file1_name[], char file2_name[])
         }
 
         if (is_file_overwritten == 'y')
-        {
-            fptr2 = fopen(file2_name, "wb"); // overwrite
-        }
+            fptr2 = fopen(file2_name, "wb"); // overwrite , write binary mode
         else
-        {
-            fptr2 = fopen(file2_name, "ab+"); // append
-        }
+            fptr2 = fopen(file2_name, "ab+"); // append , append binary mode
     }
 
     copy_file_contents(fptr1, fptr2);

@@ -19,7 +19,6 @@
 #include <stdbool.h>
 #include <errno.h>
 
-// #define PROGRAM_DIRECTORY "C:/Users/Win 10/Desktop/root/hadis80/"
 #define ROOT_DIRECTORY "C:/Users/Win 10/Desktop/root/"
 #define MIN_PASSWORD_STRENGTH 34
 #define USERSINFO_FILE "C:/Users/Win 10/Desktop/root/usersinfo.txt"

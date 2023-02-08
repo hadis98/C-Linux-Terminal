@@ -13,8 +13,8 @@ user users[1000], current_user;
 
 int main()
 {
-	NUMBER_OF_USERS = get_number_of_users();
 	handle_start_option_selection();
+	NUMBER_OF_USERS = get_number_of_users();
 	load_file_info();
 	print_welcome_messages();
 	handle_user_enter();
@@ -42,7 +42,14 @@ void handle_start_option_selection()
 
 void init_user_admin_config()
 {
-	struct user admin_user = {"hadis", "hadis80", "invest in yourself", 34, 1, 0, "2023/12/13 13:13:13"};
+	struct user admin_user;	
+	strcpy(admin_user.name, "hadis");
+	strcpy(admin_user.username, "hadis80");
+	strcpy(admin_user.passwd, "yp9o&y%49hF3");
+	admin_user.strength = get_password_strength(admin_user.passwd);
+	admin_user.access = 1;
+	admin_user.mistakes = 0;
+	strcpy(admin_user.time, "2023/12/13 13:13:13");
 
 	FILE *fptr = fopen(USERSINFO_FILE, "wb");
 	fwrite(&admin_user, sizeof(struct user), 1, fptr);
