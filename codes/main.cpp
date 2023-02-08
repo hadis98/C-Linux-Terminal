@@ -5,14 +5,18 @@
 #include "manage_commands.h"
 #include "user_login.h"
 
+void init_base_address();
 void init_user_admin_config();
 void handle_start_option_selection();
 
 int NUMBER_OF_USERS = 0;
 user users[1000], current_user;
+char ROOT_DIRECTORY[120], USERSINFO_FILE[120];
 
 int main()
 {
+
+	init_base_address();
 	handle_start_option_selection();
 	NUMBER_OF_USERS = get_number_of_users();
 	load_file_info();
@@ -21,6 +25,17 @@ int main()
 	handle_user_commands();
 
 	return 0;
+}
+
+void init_base_address()
+{
+	char cwd[PATH_MAX];
+	chdir("..");
+	getcwd(cwd, sizeof(cwd));
+	strcpy(ROOT_DIRECTORY, cwd);
+	printf("cwd=%s\n", ROOT_DIRECTORY);
+	sprintf(USERSINFO_FILE, "%s\\usersinfo.txt", cwd);
+	printf("users info file=%s\n", USERSINFO_FILE);
 }
 
 void handle_start_option_selection()
@@ -42,10 +57,10 @@ void handle_start_option_selection()
 
 void init_user_admin_config()
 {
-	struct user admin_user;	
+	struct user admin_user;
 	strcpy(admin_user.name, "hadis");
-	strcpy(admin_user.username, "hadis80");
-	strcpy(admin_user.passwd, "yp9o&y%49hF3");
+	strcpy(admin_user.username, "admin");
+	strcpy(admin_user.passwd, "1234");
 	admin_user.strength = get_password_strength(admin_user.passwd);
 	admin_user.access = 1;
 	admin_user.mistakes = 0;

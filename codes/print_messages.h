@@ -4,6 +4,7 @@
 #include "headers.h"
 #include "general.h"
 
+void print_user_exist_error();
 void print_welcome_messages();
 void print_enter_retry();
 void print_enter_user_successfully(char[]);

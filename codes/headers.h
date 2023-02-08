@@ -19,9 +19,9 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#define ROOT_DIRECTORY "C:/Users/Win 10/Desktop/root/"
+// #define ROOT_DIRECTORY "C:/Users/Win 10/Desktop/root/"
 #define MIN_PASSWORD_STRENGTH 34
-#define USERSINFO_FILE "C:/Users/Win 10/Desktop/root/usersinfo.txt"
+// #define USERSINFO_FILE "C:/Users/Win 10/Desktop/root/usersinfo.txt"
 
 struct user
 {
@@ -31,11 +31,12 @@ struct user
     int strength;
     int access;
     int mistakes;
-    char time[20];
+    char time[30];
 };
 
 extern user users[1000], current_user;
 extern int NUMBER_OF_USERS;
 extern int errno;
+extern char ROOT_DIRECTORY[120], USERSINFO_FILE[120];
 
 #endif

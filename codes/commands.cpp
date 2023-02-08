@@ -44,7 +44,6 @@ void increse_user_access_level(char username[])
 
     getcwd(cwd, sizeof(cwd));
     strcpy(current_address, cwd);
-    // chdir(PROGRAM_DIRECTORY);
 
     FILE *fptr = fopen(USERSINFO_FILE, "rb");
 
@@ -134,12 +133,11 @@ bool make_directory(char directory_name[])
 }
 
 bool handle_create_new_user_file(char file_name[])
-{    
+{
     print_enter_name();
     scanf("%s", users[NUMBER_OF_USERS].name);
 
-    print_enter_username();
-    scanf("%s", users[NUMBER_OF_USERS].username);
+    strcpy(users[NUMBER_OF_USERS].username, file_name);
 
     getchar();
     print_enter_password();
@@ -157,9 +155,22 @@ bool handle_create_new_user_file(char file_name[])
 
     print_successfully_save_password();
 
-    print_enter_time();
-    gets(users[NUMBER_OF_USERS].time);
+    char date[11], time[9], date_copy[11], time_copy[9], full_time_format[30];
+    do
+    {
+        print_enter_time();
+        scanf("%s%s", date, time);
+        strcpy(date_copy, date);
+        strcpy(time_copy, time);
 
+    } while (!is_expiration_time_valid(date, time));
+
+    strcpy(full_time_format, "");
+    strcat(full_time_format, date_copy);
+    strcat(full_time_format, " ");
+    strcat(full_time_format, time_copy);
+
+    strcpy(users[NUMBER_OF_USERS].time, full_time_format);
     users[NUMBER_OF_USERS].strength = entered_password_strength;
     users[NUMBER_OF_USERS].access = 0;
     users[NUMBER_OF_USERS].mistakes = 0;
@@ -233,22 +244,6 @@ bool handle_switch_user(bool is_admin, char entered_username[])
         print_take_user_password(entered_username);
         gets(entered_password);
     }
-
-    // while (fread(&temp_user, sizeof(struct user), 1, fptr))
-    // {
-    //     if (is_strings_equal(temp_user.username, entered_username) && (is_admin || (!is_admin && is_strings_equal(temp_user.passwd, entered_password))))
-    //     {
-    //         if (is_session_timeout(temp_user.time))
-    //         {
-    //             print_timeout_user_session(entered_username);
-    //             fclose(fptr);
-    //             return false;
-    //         }
-    //         current_user = temp_user;
-    //         user_found = true;
-    //         break;
-    //     }
-    // }
 
     for (int i = 0; i < NUMBER_OF_USERS; i++)
     {
@@ -629,24 +624,152 @@ void execute_passwd_dash_l_command()
 
 void get_new_data_by_admin()
 {
-    char time1[20], time2[20], entered_username[100], new_password[100];
+    char date[40], time[20], date_copy[40], time_copy[20], entered_username[100], new_password[100];
 
-    scanf("%s%s", time1, time2);
+    scanf("%s%s", date, time);
     scanf("%s", entered_username);
+    strcpy(date_copy, date);
+    strcpy(time_copy, time);
 
-    strcat(time1, " ");
-    strcat(time1, time2);
+    if (!is_username_exist(entered_username))
+    {
+        print_user_exist_error();
+        return;
+    }
+
+    if (!is_expiration_time_valid(date, time))
+    {
+        setcolor(12);
+        printf("invalid time format!\n");
+        return;
+    }
+
+    strcat(date_copy, " ");
+    strcat(date_copy, time_copy);
+    getchar();
+
     print_enter_new_password();
-
     gets(new_password);
-    handle_passwd_dash_l_command(entered_username, new_password, time1);
+
+    handle_passwd_dash_l_command(entered_username, new_password, date_copy);
+}
+
+bool is_username_exist(char entered_username[])
+{
+    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    struct user temp_user;
+
+    while (fread(&temp_user, sizeof(struct user), 1, fptr))
+    {
+        if (is_strings_equal(temp_user.username, entered_username))
+        {
+            return true;
+        }
+    }
+
+    fclose(fptr);
+    return false;
+}
+
+bool is_expiration_time_valid(char entered_date[], char entered_time[]) // date : 2024/12/12  time2: 22:52:12
+{
+    if ((strlen(entered_date) != 10) || (strlen(entered_time) != 8))
+    {
+        return false;
+    }
+
+    int integer_date[3]; // includes year,month,day
+    int integer_time[3]; // includes hour,minute , second
+    int counter = 0;
+    char *ptr_date = strtok(entered_date, "/");
+
+    while (ptr_date != NULL)
+    {
+        if (!has_time_valid_digits(ptr_date))
+            return false;
+
+        integer_date[counter] = atoi(ptr_date);
+        counter++;
+        ptr_date = strtok(NULL, "/");
+    }
+
+    if (!is_date_valid(integer_date[0], integer_date[1], integer_date[2]))
+        return false;
+
+    counter = 0;
+
+    char *ptr_time = strtok(entered_time, ":");
+
+    while (ptr_time != NULL)
+    {
+        if (!has_time_valid_digits(ptr_time))
+            return false;
+
+        integer_time[counter] = atoi(ptr_time);
+        counter++;
+        ptr_time = strtok(NULL, ":");
+    }
+
+    if (!is_time_valid(integer_time[0], integer_time[1], integer_time[2]))
+        return false;
+
+    return true;
+}
+
+bool has_time_valid_digits(char entered_time[])
+{
+    for (int i = 0; i < strlen(entered_time); i++)
+    {
+        if (!isdigit(entered_time[i]))
+            return false;
+    }
+    return true;
+}
+
+bool is_date_valid(int year, int month, int day)
+{
+    if (get_integer_length(year) != 4 ||
+        get_integer_length(month) >= 3 ||
+        get_integer_length(day) >= 3)
+        return false;
+
+    if (month <= 0 || month >= 13 || day <= 0 || day >= 32)
+        return false;
+
+    return true;
+}
+
+bool is_time_valid(int hour, int minute, int second)
+{
+    if (get_integer_length(hour) >= 3 ||
+        get_integer_length(minute) >= 3 ||
+        get_integer_length(second) >= 3)
+        return false;
+
+    if (hour < 0 || hour > 24 || minute < 0 || minute > 60 || second < 0 || second > 60)
+        return false;
+
+    return true;
+}
+
+int get_integer_length(int value)
+{
+    int length = 1;
+    while (value > 9)
+    {
+        length++;
+        value /= 10;
+    }
+
+    return length;
 }
 
 void handle_passwd_dash_l_command(char username[], char new_password[], char full_time[])
 {
     int password_strength;
-    password_strength = get_password_strength(new_password);
     bool is_updated_successfully = false;
+
+    password_strength = get_password_strength(new_password);
 
     while (password_strength < MIN_PASSWORD_STRENGTH)
     {

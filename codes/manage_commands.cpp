@@ -81,12 +81,6 @@ int get_user_commands()
     {
         execute_mv_command();
     }
-    /*
-    else if(strcmp(s,"myeditor")==0)
-    {
-        myeditor();
-    }
-    */
     else if (is_strings_equal(user_command, "help"))
     {
         execute_help_command();

@@ -14,6 +14,12 @@ void print_welcome_messages()
     system("cls");
 }
 
+void print_user_exist_error()
+{
+    setcolor(4);
+    printf("user does not exist!!\n");
+}
+
 void print_enter_user_successfully(char username[])
 {
     system("cls");
@@ -30,7 +36,7 @@ void print_enter_retry()
 
 void print_enter_name()
 {
-    setcolor(11);
+    Boldcyan();
     printf("enter name: ");
 }
 
@@ -73,7 +79,9 @@ void print_enter_new_password()
 void print_enter_time()
 {
     setcolor(11);
-    printf("please enter the time : ");
+    printf("please enter the time in following format\n");
+    setcolor(14);
+    printf("yyyy/mm/dd hh:mm:ss\n");
 }
 
 void print_weak_password_error()

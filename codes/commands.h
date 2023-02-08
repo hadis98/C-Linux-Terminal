@@ -59,7 +59,13 @@ void handle_change_current_password(char[]);
 
 void execute_passwd_dash_l_command();
 void get_new_data_by_admin();
-void handle_passwd_dash_l_command(char[], char[], char[]);
+void handle_passwd_dash_l_command(char username[], char new_password[], char full_time[]);
+bool is_username_exist(char[]);
+bool is_expiration_time_valid(char[], char[]);
+bool is_date_valid(int, int, int);
+bool is_time_valid(int, int, int);
+int get_integer_length(int);
+bool has_time_valid_digits(char[]);
 
 void execute_hide_command();
 void handle_hide_file_command(char[]);
