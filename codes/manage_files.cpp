@@ -135,7 +135,7 @@ void delete_users_directories()
     while (fread(&temp_user, sizeof(struct user), 1, fptr))
     {
         if (!is_strings_equal(temp_user.username, ADMIN_USERNAME) && is_directory_exist(temp_user.username))
-            rmtree(temp_user.username);
+            rmdir(temp_user.username);
     }
 
     fclose(fptr);

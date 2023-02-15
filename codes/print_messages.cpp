@@ -2,14 +2,19 @@
 
 void print_welcome_messages()
 {
-    setcolor(2);
+    setcolor(1);
     printf("\n\n\n\n\n\n\n\n\t\t\t\t\t**********************************\n");
+    setcolor(2);
     printf("\t\t\t\t\t\t******************\n");
-    printf("\t\t\t\t\t\tWELCOME \n\t\t\t\t\t\tTO\n\t\t\t\t\t        MY TERMINAL:)   \n\t\t\t\t\t\tHOPE TO ENGOY\n");
+    setcolor(5);    
+    printf("\t\t\t\t\tWELCOME TO MY COLOURFUL TERMINAL=) \n\t\t\t\t\t\tHOPE YOU ENGOY IT.\n");
+    setcolor(2);
     printf("\t\t\t\t\t\t******************\n");
+    setcolor(1);
     printf("\t\t\t\t\t**********************************\n\n\n\n");
-    printf("\t\t\twrite exit to close the terminal\n\t\t\twrite help to see a introduction of commands\n");
-    printf("\t\t\tpress the enter key to begin=)");
+    setcolor(14);
+    printf("\t\t\twrite \"exit\" to close the terminal\n\t\t\twrite \"help\" to see a introduction of commands\n");
+    printf("\t\t\tpress the enter key to start=)");
     getchar();
     system("cls");
 }
