@@ -6,12 +6,13 @@
 #include "user_login.h"
 
 void init_base_address();
-void init_user_admin_config();
 void handle_start_option_selection();
+void init_configs();
+void init_admin_config();
 
 int NUMBER_OF_USERS = 0;
 user users[1000], current_user;
-char ROOT_DIRECTORY[120], USERSINFO_FILE[120];
+char ROOT_DIRECTORY[120], USERSINFO_FILE_ADDRESS[120];
 
 int main()
 {
@@ -30,17 +31,16 @@ int main()
 void init_base_address()
 {
 	char cwd[PATH_MAX];
+
 	chdir("..");
 	getcwd(cwd, sizeof(cwd));
+
 	strcpy(ROOT_DIRECTORY, cwd);
-	printf("cwd=%s\n", ROOT_DIRECTORY);
-	sprintf(USERSINFO_FILE, "%s\\usersinfo.txt", cwd);
-	printf("users info file=%s\n", USERSINFO_FILE);
+	sprintf(USERSINFO_FILE_ADDRESS, "%s\\%s", cwd, USERSINFO_FILE);
 }
 
 void handle_start_option_selection()
 {
-	char start_scratch = false;
 	int is_init_config_selected = false;
 
 	do
@@ -52,21 +52,35 @@ void handle_start_option_selection()
 	} while (is_init_config_selected != 'y' && is_init_config_selected != 'n');
 
 	if (is_init_config_selected == 'y')
-		init_user_admin_config();
+		init_configs();
 }
 
-void init_user_admin_config()
+void init_configs()
+{
+	if (has_extra_users())
+	{
+		printf("hello\n");
+		delete_users_directories();
+	}
+
+	init_admin_config();
+}
+
+void init_admin_config()
 {
 	struct user admin_user;
-	strcpy(admin_user.name, "hadis");
-	strcpy(admin_user.username, "admin");
-	strcpy(admin_user.passwd, "1234");
+	strcpy(admin_user.name, ADMIN_NAME);
+	strcpy(admin_user.username, ADMIN_USERNAME);
+	strcpy(admin_user.passwd, ADMIN_PASSWORD);
 	admin_user.strength = get_password_strength(admin_user.passwd);
-	admin_user.access = 1;
+	admin_user.access = ADMIN_ACCESS;
 	admin_user.mistakes = 0;
-	strcpy(admin_user.time, "2023/12/13 13:13:13");
+	strcpy(admin_user.time, ADMIN_TIME);
 
-	FILE *fptr = fopen(USERSINFO_FILE, "wb");
+	if (!is_directory_exist(admin_user.username))
+		make_directory(admin_user.username);
+
+	FILE *fptr = fopen(USERSINFO_FILE_ADDRESS, "wb");
 	fwrite(&admin_user, sizeof(struct user), 1, fptr);
 	fclose(fptr);
 }

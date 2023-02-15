@@ -45,7 +45,7 @@ void increse_user_access_level(char username[])
     getcwd(cwd, sizeof(cwd));
     strcpy(current_address, cwd);
 
-    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    FILE *fptr = fopen(USERSINFO_FILE_ADDRESS, "rb");
 
     for (int i = 0; i < NUMBER_OF_USERS; i++)
     {
@@ -117,19 +117,15 @@ void handle_create_new_user_command(char user_name[])
 
 bool make_directory(char directory_name[])
 {
-    struct stat sb;
-
-    if (stat(directory_name, &sb) == 0 && S_ISDIR(sb.st_mode))
+    if (is_directory_exist(directory_name))
     {
         printf("directory already exist!!!\n");
         print_directory_create_error();
         return false;
     }
-    else
-    {
-        CreateDirectory(directory_name, NULL);
-        return true;
-    }
+
+    CreateDirectory(directory_name, NULL);
+    return true;
 }
 
 bool handle_create_new_user_file(char file_name[])
@@ -191,7 +187,7 @@ bool handle_create_new_user_file(char file_name[])
 
 int get_number_of_users()
 {
-    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    FILE *fptr = fopen(USERSINFO_FILE_ADDRESS, "rb");
     int counter = 0;
     struct user temp_user;
 
@@ -234,7 +230,7 @@ void switch_user_command(char entered_username[])
 
 bool handle_switch_user(bool is_admin, char entered_username[])
 {
-    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    FILE *fptr = fopen(USERSINFO_FILE_ADDRESS, "rb");
     bool user_found = false;
     char entered_password[100];
     struct user temp_user;
@@ -656,7 +652,7 @@ void get_new_data_by_admin()
 
 bool is_username_exist(char entered_username[])
 {
-    FILE *fptr = fopen(USERSINFO_FILE, "rb");
+    FILE *fptr = fopen(USERSINFO_FILE_ADDRESS, "rb");
     struct user temp_user;
 
     while (fread(&temp_user, sizeof(struct user), 1, fptr))

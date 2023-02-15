@@ -13,5 +13,9 @@ bool update_new_user_password_file(char[], int);
 bool update_password_file_by_admin(char[], char[], char[], int);
 void load_file_info();
 void print_users_info();
+bool has_extra_users();
+void delete_users_directories();
+bool is_directory_exist(char[]);
+void rmtree(const char[]);
 
 #endif

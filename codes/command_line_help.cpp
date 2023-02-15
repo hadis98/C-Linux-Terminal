@@ -47,7 +47,7 @@ int handle_help_command_selection(int selected_command)
 {
     switch (selected_command)
     {
-        setcolor(14);
+        setcolor(15);
     case 1:
         printf("command cd : it changes the directory.\nnote that you can use it with  absolute or relative address.\n"
                "an example for relative address : cd ../root/filename\nan example for absolute address : cd C:/Users/Win 10/Desktop/root/");
